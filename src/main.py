@@ -5,10 +5,11 @@ from nltk.stem.porter import PorterStemmer
 import operator
 import math
 import string
+import random
 
 #def extractWordCounts( comment ):
     
-
+stopwords = nltk.corpus.stopwords.words('english')
 # Input:
 # words = dictionary { stemmedWords -> word count }
 # comment - lower case string with punctuation removed
@@ -29,26 +30,39 @@ def comment_features(words,comment,hr):
     # TODO: This is done previously in last function
     # Create list of [word, pos] tuples
     posTokenizedComment = nltk.pos_tag(tokenizedComment);
-            
+          
+    rawWords = [w for (w,c) in words]
+      
     prevWord='$'
-    for (word,type) in posTokenizedComment:
-        
-        # Catches phrases like "nice review"
-        if(word.count('review')>0):
-            features[prevWord + " review"]=1;
-        # Converts phrases like "review [was] nice" into "nice review"
-        elif(prevWord.count('review')>0):
-            features[word + " review"]=1;
-        
-        # Catches phrases like "thank you"    
-        # TODO: If we flip these statements, they can be factored into a function foo(word) with the section above
-        if(prevWord.count('thank')>0):
-            features["thank " + word]=1;
-        # Catches phrases like "you [was] thank" and converts to "thank you"
-        elif(word.count('thank')>0):
-            features["thank " + prevWord]=1;
-        
-        prevWord=word
+    for (word,part) in posTokenizedComment:
+        if((part.startswith('JJ') or part.startswith('NN')) and word not in stopwords):
+            stemmedWord = stemmer.stem(word)
+            if(stemmedWord in rawWords and prevWord in rawWords):
+                phrase1 = prevWord + " " + stemmedWord
+                phrase2 = word + " " + prevWord
+                
+                defaultPhrase = phrase1
+                if(phrase2 in features):
+                    defaultPhrase = phrase2
+                
+                features[defaultPhrase]=1
+                
+            # Catches phrases like "nice review"
+            #if(word.count('review')>0):
+            #    features[prevWord + " review"]=1;
+            # Converts phrases like "review [was] nice" into "nice review"
+            #elif(prevWord.count('review')>0):
+            #    features[word + " review"]=1;
+            
+            # Catches phrases like "thank you"    
+            # TODO: If we flip these statements, they can be factored into a function foo(word) with the section above
+            #if(prevWord.count('thank')>0):
+            #    features["thank " + word]=1;
+            # Catches phrases like "you [was] thank" and converts to "thank you"
+            #elif(word.count('thank')>0):
+            #    features["thank " + prevWord]=1;
+            
+            prevWord=stemmedWord
     
     for (word,count) in words:  
         if(stemmedTokenizedComment.count(word)>0):
@@ -74,14 +88,19 @@ def comment_features(words,comment,hr):
 def PrepareFeatureSets(data):
     stemmer = PorterStemmer()
     
-    stopwords = nltk.corpus.stopwords.words('english')
     
+    
+    reviewIds = set()
+    wordsPerReview = {}
     words = {}
     comments = []
     i = 0
     for n in data:
         # Replace punctuation with white space
         comment = n["Comment"].lower();
+
+        reviewIds.update([n["Review_ID"]])
+
         for punct in string.punctuation:
             comment=comment.replace(punct," ")
         
@@ -94,15 +113,19 @@ def PrepareFeatureSets(data):
         
         for word,part in posTokenizedComment:
             # If adjective or noun and not a stop word
-            if((part=='JJ' or part=='NN') and word not in stopwords):
+            if((part.startswith('JJ') or part.startswith('NN')) and word not in stopwords):
                 # Stem the word
                 stemmedWord = stemmer.stem(word)
                 # Increment stemmed word count
                 if(stemmedWord in words):
                     words[stemmedWord] += 1
+                    wordsPerReview[stemmedWord].update([n["Review_ID"]])
+                    #print wordsPerReview[stemmedWord]
                 else:
                     print "Adding " + str(stemmedWord)
                     words[stemmedWord] = 1
+                    wordsPerReview[stemmedWord]=set([n["Review_ID"]])
+                    #print wordsPerReview[stemmedWord]
         comments.append([comment,n["Thumbs Up!"],n["Helpfullness Ratio"]])
         i=i+1
         # END FOR LOOP
@@ -110,16 +133,23 @@ def PrepareFeatureSets(data):
     # Sort by value (wordCount) rather than key (stemmedWords) - converts dictionary to list of tuples [ [stemmedWord, wordCount], ... ]
     sortedWords = sorted(words.iteritems(), key = operator.itemgetter(1))
     
+        
     # TODO: extract into function
     # Extract only words between threshold count ranges
     threshMin=10
     threshMax=1100
-    filteredWords = [ (w,n) for (w,n) in sortedWords if n>threshMin and n<threshMax]
+    filteredWords = [ (w,n) for (w,n) in sortedWords if n>threshMin and n<threshMax and w in wordsPerReview and ( float(len(wordsPerReview[w]))/ float(len(reviewIds)) )>0.3 ]
     
     # Print filtered words
     i = 0
+    
+    
+    print ""
     for word in filteredWords:
-        print str(i) + ": " + str(word)
+        if word[0] in wordsPerReview.keys():
+            print str(i) + ": " + str(word) + ":" + str(float(len(wordsPerReview[word[0]]))/ float(len(reviewIds)))
+        else:
+            print str(i) + ": " + str(word) + ": NOT THERE!"
         i += 1
     
     # Return 
@@ -253,27 +283,28 @@ if __name__ ==  "__main__":
     # Load training data
     data = csv.DictReader(open("../data/training-data.csv"))
     data = [n for n in data]
-    #data = data[0:100]
+    random.shuffle(data)
+    #data = data[0:1000]
     
 # BEGIN BAYESIAN CLASSIFIER
-    #featuresets = PrepareFeatureSets(data)
+    featuresets = PrepareFeatureSets(data)
     
-    #random.shuffle(featuresets)
+    random.shuffle(featuresets)
     
-    #train_set, test_set = featuresets[len(featuresets)/2:], featuresets[:len(featuresets)/2]
-    #classifier = nltk.NaiveBayesClassifier.train(train_set)
-    #print nltk.classify.accuracy(classifier, test_set)
+    train_set, test_set = featuresets[len(featuresets)/2:], featuresets[:len(featuresets)/2]
+    classifier = nltk.NaiveBayesClassifier.train(train_set)
+    print nltk.classify.accuracy(classifier, test_set)
 
-    #classifier.show_most_informative_features(1000);
+    classifier.show_most_informative_features(1000);
 # END BAYESIAN CLASSIFIER
     
 # BEGIN SVM INTEGRATION
-    featureSets = PrepareSvmFeatureSets( data )
+    #featureSets = PrepareSvmFeatureSets( data )
     
-    train_set, test_set = featureSets[len(featureSets)/2:], featureSets[:len(featureSets)/2]
+    #train_set, test_set = featureSets[len(featureSets)/2:], featureSets[:len(featureSets)/2]
     
-    writeSvmFeatureSet( "train.svm", train_set )
-    writeSvmFeatureSet( "test.svm", test_set )
+    #writeSvmFeatureSet( "train.svm", train_set )
+    #writeSvmFeatureSet( "test.svm", test_set )
     print "done\n"
 # END SVM INTEGRATION
     
