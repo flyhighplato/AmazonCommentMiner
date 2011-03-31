@@ -58,7 +58,8 @@ class Context:
         self.mCustomData = {}
         
         # Convert to lower case, remove punctuation, and assign parts of speech, etc...
-        for rawCsvCommentDict in self.mRawCsvComments:
+        for itrComment, rawCsvCommentDict in enumerate( self.mRawCsvComments ):
+            logging.getLogger("Context").info("Processing comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
             
             # Extract review identifier
             reviewId = rawCsvCommentDict["Review_ID"]
@@ -102,7 +103,6 @@ class Context:
                         self.mAdjAndNounWordCountMap[ stemmedWord ] += 1
                         self.mStemmedWordToReviewsMap[ stemmedWord ].update( [ reviewId ] )
                     else:
-                        logging.getLogger("Context").info("Adding word: " + stemmedWord)
                         self.mAdjAndNounWordCountMap[ stemmedWord ] = 1
                         self.mStemmedWordToReviewsMap[ stemmedWord ] = set( [ reviewId ] )
             # end inner for loop : iteration of (word, part of speech) tuples in single comment
@@ -115,7 +115,7 @@ class Context:
         
         # Set of words filtered by word counts: extract only words between threshold count ranges
         fGetWordReviewOverlap = lambda stemmedWord : float( len ( self.mStemmedWordToReviewsMap[ stemmedWord ] ) ) / float( len( self.mReviewIds ) ) 
-        self.mFilteredWords = [ (word,count) for (word,count) in self.mAdjAndNounWordCountMap.iteritems() if ( ( count > filterWordCountMin ) and ( count < filterWordCountMax ) and ( fGetWordReviewOverlap( word ) > filterWordReviewOverlap ) ) ]
+        self.mFilteredWords = [ (word,count) for (word,count) in self.mAdjAndNounWordCountMap.iteritems() if  ( fGetWordReviewOverlap( word ) > filterWordReviewOverlap ) ]
         
         self.printFilteredWords()
 
