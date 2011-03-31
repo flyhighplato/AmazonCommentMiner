@@ -17,7 +17,11 @@ stopwords = nltk.corpus.stopwords.words('english')
 def comment_features(words,comment,hr):
     
     features={}
-    
+    if(len(comment)>100):
+        features["LENGTH"]="HIGH"
+    else:
+        features["LENGTH"]="LOW"
+        
     # Break comment into list of words
     # TODO: This is already done previously in PrepareFeatureSets!
     tokenizedComment = nltk.word_tokenize(comment.lower()) 
@@ -39,10 +43,10 @@ def comment_features(words,comment,hr):
             stemmedWord = stemmer.stem(word)
             if(stemmedWord in rawWords and prevWord in rawWords):
                 phrase1 = prevWord + " " + stemmedWord
-                phrase2 = word + " " + prevWord
+                phrase2 = stemmedWord + " " + prevWord
                 
                 defaultPhrase = phrase1
-                if(phrase2 in features):
+                if(phrase2 in features.keys()):
                     defaultPhrase = phrase2
                 
                 features[defaultPhrase]=1
