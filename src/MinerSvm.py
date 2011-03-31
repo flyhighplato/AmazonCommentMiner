@@ -44,3 +44,6 @@ def SvmGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
 def SvmClassify( trainInputs, testInputs ):
     # @ TODO:
     return 0
+
+def SvmGetPolicy():
+    return [ SvmPrepareFeatures, SvmGetClassifierInputs, SvmClassify ]

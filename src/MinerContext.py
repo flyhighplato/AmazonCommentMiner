@@ -32,6 +32,7 @@ class Context:
         self.mRawCsvComments = csv.DictReader(open(strPathToRawCsvComments))
         self.mRawCsvComments = [comment for comment in self.mRawCsvComments]
         random.shuffle(self.mRawCsvComments)
+        # self.mRawCsvComments=self.mRawCsvComments[0:100]
         
         # Parallel list of lower case comments with punctuation removed
         self.mLowerCasePunctRemovedComments = []
