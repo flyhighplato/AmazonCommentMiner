@@ -40,8 +40,18 @@ def SvmGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
             inputsCollector.append( " " + str( itrFeature+1 ) + ":" + str(featureValue) )
         outClassifierInputs.append( "".join( inputsCollector ) )
     assert( len( outClassifierInputs ) == len( ctx.mRawCsvComments ) )    
-        
+
 def SvmClassify( trainInputs, testInputs ):
+    logging.getLogger("Svm").info( "classifying" )
+    
+    svmOutput = open("svmTrain.txt", "w")
+    for input in trainInputs:
+        svmOutput.write(input + "\r\n")
+        
+    svmOutput = open("svmTest.txt", "w")
+    for input in testInputs:
+        svmOutput.write(input + "\r\n")
+        
     # @ TODO:
     return 0
 
