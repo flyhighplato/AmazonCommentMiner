@@ -40,7 +40,7 @@ def getClassifierPolicy( classifierType ):
 def appMain():
     
     # Select our classifier policy
-    classifierType = eClassifierType.Svm
+    classifierType = eClassifierType.NaiveBayes
     classifierPolicy = getClassifierPolicy( classifierType )
     
     # initialize our logger
