@@ -32,7 +32,7 @@ class Context:
         self.mRawCsvComments = csv.DictReader(open(strPathToRawCsvComments))
         self.mRawCsvComments = [comment for comment in self.mRawCsvComments]
         random.shuffle(self.mRawCsvComments)
-        #self.mRawCsvComments=self.mRawCsvComments[0:10]
+        #self.mRawCsvComments=self.mRawCsvComments[0:1000]
         
         # Parallel list of lower case comments with punctuation removed
         self.mLowerCasePunctRemovedComments = []
@@ -58,12 +58,16 @@ class Context:
         # Dictionary for storing custom data specific to a classifier
         self.mCustomData = {}
         
+        self.mPartOfSpeechTokenizedCommentsAndReviewId = []
+        
         # Convert to lower case, remove punctuation, and assign parts of speech, etc...
         for itrComment, rawCsvCommentDict in enumerate( self.mRawCsvComments ):
-            logging.getLogger("Context").info("Processing comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
+            logging.getLogger("Context").info("Processing (1-gram) comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
             
             # Extract review identifier
             reviewId = rawCsvCommentDict["Review_ID"]
+            
+            #self.itrToReviewIds[itrComment]=reviewId
             
             # Append any unique review identifiers
             self.mReviewIds.update([reviewId])
@@ -83,8 +87,11 @@ class Context:
             # Filter out stop words
             tokenizedComment[:] = [ word for word in tokenizedComment if ( word not in self.mStopWords ) ]     
         
+            posTagComment=nltk.pos_tag(tokenizedComment)
             # Append a list of (word, part of speech) tuples
-            self.mPartOfSpeechTokenizedComments.append( nltk.pos_tag(tokenizedComment) )
+            self.mPartOfSpeechTokenizedComments.append( posTagComment)
+            
+            self.mPartOfSpeechTokenizedCommentsAndReviewId.append((posTagComment,reviewId))
             
             # Append a list of stemmed words
             self.mStemmedTokenizedComments.append( [] )
@@ -92,6 +99,7 @@ class Context:
             
             # Assert parallel lists are same length
             assert( len( self.mPartOfSpeechTokenizedComments[-1] ) == len( self.mStemmedTokenizedComments[-1] ) )
+            
             
             # Determine word counts for nouns and adjectives
             for itr, (word, partOfSpeech) in enumerate( self.mPartOfSpeechTokenizedComments[-1] ):
@@ -114,9 +122,60 @@ class Context:
         assert( len( self.mLowerCasePunctRemovedComments ) == len( self.mPartOfSpeechTokenizedComments ) )
         assert( len( self.mPartOfSpeechTokenizedComments ) == len( self.mStemmedTokenizedComments ) )
         
+        
+            
         # Set of words filtered by word counts: extract only words between threshold count ranges
         fGetWordReviewOverlap = lambda stemmedWord : float( len ( self.mStemmedWordToReviewsMap[ stemmedWord ] ) ) / float( len( self.mReviewIds ) ) 
         self.mFilteredWords = [ (word,count) for (word,count) in self.mAdjAndNounWordCountMap.iteritems() if  ( fGetWordReviewOverlap( word ) > filterWordReviewOverlap ) ]
+        
+        #Use the resulting filtered words as possible components of a phrase
+        self.mPossiblePhraseWords = [word for (word,count) in self.mFilteredWords]
+        
+        #Count of 2-gram occurences
+        self.mTwoGramsCountMap = {}
+        
+        #Count of the number of reviews the 2-grams occur in
+        self.mTwoGramsToReviewsMap = {}
+        
+        #Extract all 2-grams from the comments
+        for itrComment, (tokComment,reviewId) in enumerate( self.mPartOfSpeechTokenizedCommentsAndReviewId ):
+            logging.getLogger("Context").info("Processing (2-grams) comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
+            
+            #Keeps track of the previous word scanned
+            prevWord="$"
+            for itr, (word, partOfSpeech) in enumerate( tokComment ):
+                
+                # Determine if part of speech is noun or adjective
+                if ( MinerMiscUtils.isAdj( partOfSpeech ) or MinerMiscUtils.isNoun( partOfSpeech ) ):
+                    
+                    # Obtain stemmed word
+                    stemmedWord = stemmer.stem(word)
+                    
+                    # Increment stemmed 2-gram counts
+                    if ( stemmedWord in self.mPossiblePhraseWords or prevWord in self.mPossiblePhraseWords):
+                        phrase1 = prevWord + " " + stemmedWord
+                        phrase2 = stemmedWord + " " + prevWord
+                        defaultPhrase = phrase1
+                        
+                        if ( phrase2 in self.mTwoGramsCountMap.keys() ):
+                            defaultPhrase = phrase2
+                            self.mTwoGramsCountMap[defaultPhrase]+=1
+                            self.mTwoGramsToReviewsMap[defaultPhrase].update(set(reviewId))
+                        elif ( phrase1 in self.mTwoGramsCountMap.keys() ):
+                            self.mTwoGramsCountMap[defaultPhrase]+=1
+                            self.mTwoGramsToReviewsMap[defaultPhrase].update(set(reviewId))
+                        else:
+                            self.mTwoGramsCountMap[defaultPhrase]=1
+                            self.mTwoGramsToReviewsMap[defaultPhrase]=set(reviewId)
+                        
+                    prevWord=stemmedWord
+        
+        #Extract all 2-grams that occur frequently enough across reviews to care about and add them to the set of "filtered words"
+        #TODO: There should really be a separate collection for 2-grams
+        for twoGram in self.mTwoGramsCountMap.keys():
+            if(float(len(self.mTwoGramsToReviewsMap[twoGram])))/float( len( self.mReviewIds ))>(filterWordReviewOverlap*filterWordReviewOverlap):
+                self.mFilteredWords.append((twoGram,self.mTwoGramsCountMap[twoGram]))
+        
         
         self.printFilteredWords()
 
