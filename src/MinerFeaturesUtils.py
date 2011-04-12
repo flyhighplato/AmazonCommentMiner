@@ -63,6 +63,30 @@ def addFeaturesWordExists( ctx, outFeaturesMaps ):
                 outFeaturesMaps[ itrComment ][ word ] = 1
             else:
                 outFeaturesMaps[ itrComment ][ word ] = 0
+                
+def addFeaturesAuthorFreqInReview( ctx, outFeaturesMaps):
+    logging.getLogger("Features").info( "author frequency" )
+    for itrComment, (reviewId,author) in enumerate( ctx.mAuthorReviewPerComment ):
+        if(ctx.mAuthorFreqPerReview[reviewId][author]>5):
+            outFeaturesMaps[ itrComment ]["MULTI-COMMENT"]=2
+        elif(ctx.mAuthorFreqPerReview[reviewId][author]>1):
+            outFeaturesMaps[ itrComment ]["MULTI-COMMENT"]=1
+        else:
+            outFeaturesMaps[ itrComment ]["MULTI-COMMENT"]=0
+        if(ctx.mReviewAuthorMap[reviewId]==author):
+            outFeaturesMaps[ itrComment ]["IS-AUTHOR"]=1
+        else:
+            outFeaturesMaps[ itrComment ]["IS-AUTHOR"]=0
+            
+        outFeaturesMaps[ itrComment ]["REVIEW-STARS"]=ctx.mReviewStarMap[reviewId]
+        
+        if(ctx.mReviewStarMap[reviewId]>ctx.productAvgStars):
+            outFeaturesMaps[ itrComment ]["REVIEW-STARS-DEVIATION"]=-1
+        elif(ctx.mReviewStarMap[reviewId]>ctx.productAvgStars):
+            outFeaturesMaps[ itrComment ]["REVIEW-STARS-DEVIATION"]=1
+        else:
+            outFeaturesMaps[ itrComment ]["REVIEW-STARS-DEVIATION"]=0
+        
 
                     
                     

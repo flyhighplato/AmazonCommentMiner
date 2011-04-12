@@ -16,6 +16,7 @@ def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps ):
     MinerFeaturesUtils.addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesPhrases( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesWordExists( ctx, outFeaturesMaps )
+    MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
     
 def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
     logging.getLogger("NaiveBayes").info( "get classifier inputs" )
@@ -30,6 +31,8 @@ def NaiveBayesClassify( trainInputs, testInputs ):
     classifier = nltk.NaiveBayesClassifier.train( trainInputs )
     print nltk.classify.accuracy( classifier, testInputs )
     classifier.show_most_informative_features( 1000 );
+    
+    return classifier
 
 def NaiveBayesGetPolicy():
     return [ NaiveBayesPrepareFeatures, NaiveBayesGetClassifierInputs, NaiveBayesClassify ]

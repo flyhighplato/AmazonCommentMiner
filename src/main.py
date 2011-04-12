@@ -47,7 +47,7 @@ def appMain():
     initLogger()
     
     # Pre-process data
-    ctx = MinerContext.Context( "../data/training-data.csv", 10, 1100, 0.3 )
+    ctx = MinerContext.Context( "../data/training-data.csv","../data/all-reviews.csv", 10, 1100, 0.3 )
     
     # Map comments to features sets
     featuresMaps = []
@@ -61,8 +61,23 @@ def appMain():
     random.shuffle( classifierInputs )
     trainInputs, testInputs = classifierInputs[ len( classifierInputs )/2: ], classifierInputs[ :len(classifierInputs)/2 ]
 
+    errorFile=open("errors.txt",'w')
     # Test classifier
-    classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
+    classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
+    
+    count = 1
+    logging.getLogger("NaiveBayes").info( "show mis-classified" )
+    for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
+        probDist = classifier.prob_classify(featuresMaps[itrComment])
+        bClassifierIsPositive = probDist.prob('1')>0.5
+        bClassifierIsNegative = probDist.prob('0')>0.5
+        bCommentIsNegative = (rawCsvCommentDict[ "Thumbs Up!" ]=='0' and rawCsvCommentDict[ "Thumbs Down" ]=='0')
+        bCommentIsPositive = (rawCsvCommentDict[ "Thumbs Up!" ]=='1' or rawCsvCommentDict[ "Thumbs Down" ]=='1') 
+        if( ( bClassifierIsPositive and bCommentIsNegative ) or ( bClassifierIsNegative and bCommentIsPositive ) ):
+            errorFile.write(str("#" + str(count) + " \r\n 0:" + str(probDist.prob('0')) + " 1:" + str(probDist.prob('1'))) + "\r\n")
+            errorFile.write(str(rawCsvCommentDict["Comment"]) + "\r\n\r\n")
+            #errorFile.write(str(featuresMaps[itrComment]) + "\r\n\r\n")
+            count+=1
 
 if __name__ == '__main__':
     appMain()

@@ -17,7 +17,7 @@ import string
 class Context:
     
     # Constructor
-    def __init__( self, strPathToRawCsvComments, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap ):
+    def __init__( self, strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap ):
         # Log parameters
         logging.getLogger("Context").info( "Creating new context:" )
         logging.getLogger("Context").info( "strPathToRawCsvComments: " + strPathToRawCsvComments )
@@ -27,12 +27,18 @@ class Context:
         
         # Load stop words
         self.mStopWords = nltk.corpus.stopwords.words('english')
+        
+        self.mRawCsvReviews = csv.DictReader(open(strPathToRawCsvReviews))
+        self.mRawCsvReviews = [review for review in self.mRawCsvReviews]
+        
+        
+            
                                                       
         # Load and shuffle comment data
         self.mRawCsvComments = csv.DictReader(open(strPathToRawCsvComments))
         self.mRawCsvComments = [comment for comment in self.mRawCsvComments]
         random.shuffle(self.mRawCsvComments)
-        #self.mRawCsvComments=self.mRawCsvComments[0:1000]
+        #self.mRawCsvComments=self.mRawCsvComments[0:100]
         
         # Parallel list of lower case comments with punctuation removed
         self.mLowerCasePunctRemovedComments = []
@@ -60,6 +66,30 @@ class Context:
         
         self.mPartOfSpeechTokenizedCommentsAndReviewId = []
         
+        self.mAuthorFreqPerReview={}
+        
+        self.mAuthorReviewPerComment=[]
+        
+        productCount={}
+        self.productAvgStars={}
+        for rawReview in self.mRawCsvReviews:
+            if(rawReview["Product"] not in self.productAvgStars.keys()):
+                self.productAvgStars[rawReview["Product"]]=float(rawReview["Star Rating"])
+                productCount[rawReview["Product"]]=1
+            else:
+                self.productAvgStars[rawReview["Product"]]+=float(rawReview["Star Rating"])
+                productCount[rawReview["Product"]]+=1
+            
+        for key in self.productAvgStars.keys():
+            self.productAvgStars[key]=float(self.productAvgStars[key])/float(productCount[key])
+            
+            
+        self.mReviewAuthorMap={}
+        self.mReviewStarMap={}
+        for rawReview in self.mRawCsvReviews:
+            self.mReviewAuthorMap[rawReview["Review_ID"]]=rawReview["Author"]
+            self.mReviewStarMap[rawReview["Review_ID"]]=rawReview["Star Rating"]
+            
         # Convert to lower case, remove punctuation, and assign parts of speech, etc...
         for itrComment, rawCsvCommentDict in enumerate( self.mRawCsvComments ):
             logging.getLogger("Context").info("Processing (1-gram) comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
@@ -67,7 +97,18 @@ class Context:
             # Extract review identifier
             reviewId = rawCsvCommentDict["Review_ID"]
             
-            #self.itrToReviewIds[itrComment]=reviewId
+            # Extract author of comment
+            author = rawCsvCommentDict["Author"]
+            
+            if reviewId not in self.mAuthorFreqPerReview.keys():
+                self.mAuthorFreqPerReview[reviewId]={}
+                self.mAuthorFreqPerReview[reviewId][author]=1
+            elif author not in self.mAuthorFreqPerReview[reviewId].keys():
+                self.mAuthorFreqPerReview[reviewId][author]=1
+            else:
+                self.mAuthorFreqPerReview[reviewId][author]+=1
+            
+            self.mAuthorReviewPerComment.append((reviewId,author))
             
             # Append any unique review identifiers
             self.mReviewIds.update([reviewId])
@@ -175,7 +216,6 @@ class Context:
         for twoGram in self.mTwoGramsCountMap.keys():
             if(float(len(self.mTwoGramsToReviewsMap[twoGram])))/float( len( self.mReviewIds ))>(filterWordReviewOverlap*filterWordReviewOverlap):
                 self.mFilteredWords.append((twoGram,self.mTwoGramsCountMap[twoGram]))
-        
         
         self.printFilteredWords()
 

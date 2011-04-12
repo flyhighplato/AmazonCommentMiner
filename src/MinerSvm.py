@@ -20,7 +20,9 @@ def SvmPrepareFeatures( ctx, outFeaturesMaps ):
     MinerFeaturesUtils.initFeatures( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesCommentLength( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps )
+    MinerFeaturesUtils.addFeaturesPhrases( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesWordExists( ctx, outFeaturesMaps )
+    MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
 
 def SvmUtilGetStrSign( value ):
     if ( value >= 0 ):
