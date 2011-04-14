@@ -17,6 +17,8 @@ def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps ):
     MinerFeaturesUtils.addFeaturesPhrases( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesWordExists( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
+    MinerFeaturesUtils.addFeaturesReviewAuthorMentioned(ctx, outFeaturesMaps)
+    MinerFeaturesUtils.addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps )
     
 def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
     logging.getLogger("NaiveBayes").info( "get classifier inputs" )

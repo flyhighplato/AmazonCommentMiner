@@ -30,10 +30,7 @@ class Context:
         
         self.mRawCsvReviews = csv.DictReader(open(strPathToRawCsvReviews))
         self.mRawCsvReviews = [review for review in self.mRawCsvReviews]
-        
-        
-            
-                                                      
+                                                              
         # Load and shuffle comment data
         self.mRawCsvComments = csv.DictReader(open(strPathToRawCsvComments))
         self.mRawCsvComments = [comment for comment in self.mRawCsvComments]
@@ -82,8 +79,7 @@ class Context:
             
         for key in self.productAvgStars.keys():
             self.productAvgStars[key]=float(self.productAvgStars[key])/float(productCount[key])
-            
-            
+               
         self.mReviewAuthorMap={}
         self.mReviewStarMap={}
         for rawReview in self.mRawCsvReviews:
@@ -140,8 +136,7 @@ class Context:
             
             # Assert parallel lists are same length
             assert( len( self.mPartOfSpeechTokenizedComments[-1] ) == len( self.mStemmedTokenizedComments[-1] ) )
-            
-            
+                
             # Determine word counts for nouns and adjectives
             for itr, (word, partOfSpeech) in enumerate( self.mPartOfSpeechTokenizedComments[-1] ):
                 # Determine if part of speech is noun or adjective
@@ -162,9 +157,7 @@ class Context:
         assert( len( self.mRawCsvComments ) == len( self.mLowerCasePunctRemovedComments ) )
         assert( len( self.mLowerCasePunctRemovedComments ) == len( self.mPartOfSpeechTokenizedComments ) )
         assert( len( self.mPartOfSpeechTokenizedComments ) == len( self.mStemmedTokenizedComments ) )
-        
-        
-            
+    
         # Set of words filtered by word counts: extract only words between threshold count ranges
         fGetWordReviewOverlap = lambda stemmedWord : float( len ( self.mStemmedWordToReviewsMap[ stemmedWord ] ) ) / float( len( self.mReviewIds ) ) 
         self.mFilteredWords = [ (word,count) for (word,count) in self.mAdjAndNounWordCountMap.iteritems() if  ( fGetWordReviewOverlap( word ) > filterWordReviewOverlap ) ]

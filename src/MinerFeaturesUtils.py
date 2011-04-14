@@ -7,6 +7,8 @@ MinerFeaturesUtils.py
 
 import logging
 import MinerMiscUtils
+import nltk
+import string
 
 # Appends an empty features set dictionary for each comment
 def initFeatures( ctx, outFeaturesMaps ):
@@ -86,10 +88,64 @@ def addFeaturesAuthorFreqInReview( ctx, outFeaturesMaps):
             outFeaturesMaps[ itrComment ]["REVIEW-STARS-DEVIATION"]=1
         else:
             outFeaturesMaps[ itrComment ]["REVIEW-STARS-DEVIATION"]=0
-        
 
-                    
-                    
+def isNameInComment( ctx, name, itrComment ):
+    name = name.lower()
+    
+    # Filter out punctuation from author name
+    for punct in string.punctuation:
+            name=name.replace(punct," ")
+     
+    bNameInComment = 0
+    if ( -1 != ctx.mLowerCasePunctRemovedComments[ itrComment ].find( name ) ):
+        bNameInComment = 1
+     
+    # Tokenize author name and search for tokens
+    if ( 0 == bNameInComment ):
+        tokenizedName = []
+        for nameToken in nltk.word_tokenize( name ):
+            if ( ( len( nameToken ) > 2 ) and ( nameToken not in ctx.mStopWords ) ):
+                tokenizedName.append( nameToken )
+        
+        # Check to see if a token exists in the comment
+        for nameToken in tokenizedName:
+            if ( -1 != ctx.mLowerCasePunctRemovedComments[ itrComment ].find( nameToken ) ):
+                    bNameInComment = 1
+                    break
+    # return 1 if name was found, 0 otherwise
+    return bNameInComment
+
+
+def addFeaturesReviewAuthorMentioned( ctx, outFeaturesMaps ):
+    logging.getLogger("Features").info( "Review Author Mentioned" )
+    assert( len( ctx.mAuthorReviewPerComment ) == len( ctx.mLowerCasePunctRemovedComments ) )
+    for itrComment, (reviewId,authorOfComment) in enumerate( ctx.mAuthorReviewPerComment ):
+        assert( reviewId in ctx.mReviewAuthorMap )
+        # Convert author of review to lowercase
+        authorOfReview = ctx.mReviewAuthorMap[ reviewId ]
+        outFeaturesMaps[ itrComment ][ "REV-AUTHOR-NAME-IN-COMMENT" ] = isNameInComment( ctx, authorOfReview, itrComment )
+
+def addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps ):
+    logging.getLogger("Features").info( "Comment Author Mentioned" )
+    
+    # Create map from review id to list of comment authors
+    reviewIdToCommentAuthorListMap = {}
+    for (reviewId,commentAuthor) in ctx.mAuthorReviewPerComment:
+        if ( reviewId not in reviewIdToCommentAuthorListMap ):
+            reviewIdToCommentAuthorListMap[ reviewId ] = []
+        if ( commentAuthor == ctx.mReviewAuthorMap[ reviewId ] ):
+            continue
+        
+        if ( commentAuthor not in reviewIdToCommentAuthorListMap[reviewId] ):
+                reviewIdToCommentAuthorListMap[ reviewId ].append( commentAuthor )
+    
+    for itrComment, (reviewId,authorOfComment) in enumerate( ctx.mAuthorReviewPerComment ):
+        bNameFound = 0
+        for name in reviewIdToCommentAuthorListMap[ reviewId ]:
+            if ( isNameInComment( ctx, name, itrComment ) ):
+                bNameFound = 1
+                break
+        outFeaturesMaps[ itrComment ][ "COM-AUTHOR-NAME-IN-COMMENT" ] = bNameFound
                 
                 
         
