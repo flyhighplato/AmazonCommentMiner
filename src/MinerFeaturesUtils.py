@@ -167,14 +167,12 @@ def addFeaturesCAR( ctx, outFeaturesMaps ):
     uniqueCarKeysMap = {}
    
     for itrLevel in range( 1, len(FHist) ):
-        print "FHist=" + str(FHist) + "\n"
-        print "FHist[itrLevel]=" + str(FHist[itrLevel])
         for CARObj in FHist[itrLevel]:
             CARKey = ""
             for enumFeatureKey in CARObj.condSet:
                 CARKey += str(flattenedFeaturesMap[enumFeatureKey][0])+"="+str(flattenedFeaturesMap[enumFeatureKey][1])+","
             if ( CARKey in uniqueCarKeysMap ):
                 continue
-            logging.getLogger("Features").info( "Adding CAR: " + str(CARKey) )
+            logging.getLogger("Features").info( "Adding "+str(len(CARObj.condSet))+"-CAR: " + str(CARKey) )
             for commentFeaturesMap in outFeaturesMaps:
                 commentFeaturesMap[ CARKey ] = CARObj.isContained( commentFeaturesMap, flattenedFeaturesMap )
