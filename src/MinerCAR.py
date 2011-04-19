@@ -151,7 +151,7 @@ class CARStats:
 def CAR_extract_frequent_rules( candidateCARObjs, minSup, minConf, n, outFrequentCARObjs ):
     logging.getLogger("CAR").info( "extract frequent rules" )
     assert( n > 0.0 )
-    stats = CARStats()
+    #stats = CARStats()
     outFrequentCARObjs[:] = []
     for CARObj in candidateCARObjs:
         CARObj.support = CARObj.labelCount / n
@@ -162,9 +162,9 @@ def CAR_extract_frequent_rules( candidateCARObjs, minSup, minConf, n, outFrequen
         if ((CARObj.support >= minSup) and (CARObj.confidence >= minConf)):
             outFrequentCARObjs.append( CARObj )
         # Update stats for support
-        stats.updateForCAR(CARObj)
-    stats.finalize( candidateCARObjs )
-    logging.getLogger("CAR").info( "stats=" + str(stats) )
+        #stats.updateForCAR(CARObj)
+    #stats.finalize( candidateCARObjs )
+    #logging.getLogger("CAR").info( "stats=" + str(stats) )
 
 def CAR_candidate_gen( prevFrequentCARObjs, outCandidateCARObjs ):
     logging.getLogger("CAR").info( "candidate gen" )
