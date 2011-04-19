@@ -47,7 +47,8 @@ def appMain():
     initLogger()
     
     # Pre-process data
-    ctx = MinerContext.Context( "../data/training-data.csv","../data/all-reviews.csv", 10, 1100, 0.3 )
+    ctxCacheFileName = "ctxCache.txt"
+    ctx = MinerContext.loadContext(ctxCacheFileName, "../data/training-data.csv","../data/all-reviews.csv", 10, 1100, 0.3 )
     
     # Map comments to features sets
     featuresMaps = []

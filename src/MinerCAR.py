@@ -9,9 +9,6 @@ import logging
 import MinerMiscUtils
 import copy
 import pickle
-import os
-
-# Uncomment if want statistics
 import sys
 import math
 
@@ -259,7 +256,7 @@ def CAR_apriori( ctx, featuresMaps, cacheFileName, minSup=0.1, minConf=0.5 ):
 def CAR_conditional_apriori(ctx, featuresMaps, cacheFileName, minSup=0.1, minConf=0.5):
     logging.getLogger("CAR").info( "conditional apriori" )
     # See if cache exists
-    if ( os.path.isfile(cacheFileName) == False ):
+    if ( MinerMiscUtils.fileExists( cacheFileName ) == False ):
         CAR_apriori( ctx, featuresMaps, cacheFileName, minSup, minConf )
     
     FHistFlattenedFeaturesMapPair = pickle.load( open( cacheFileName ) )
