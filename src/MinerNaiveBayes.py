@@ -6,6 +6,7 @@ MinerNaiveBayes.py
 '''
 
 import logging
+import MinerMiscUtils
 import MinerFeaturesUtils
 import nltk
     
@@ -19,21 +20,19 @@ def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps ):
     MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
     MinerFeaturesUtils.addFeaturesReviewAuthorMentioned(ctx, outFeaturesMaps)
     MinerFeaturesUtils.addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps )
+    #MinerFeaturesUtils.addFeaturesCAR( ctx, outFeaturesMaps )
     
 def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
     logging.getLogger("NaiveBayes").info( "get classifier inputs" )
     outClassifierInputs[:] = []
     for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
-        # @TODO: Classify "Thumbs Down!"
-        type = str(int(rawCsvCommentDict[ "Thumbs Up!" ]) or int(rawCsvCommentDict[ "Thumbs Down" ]))
-        outClassifierInputs.append( ( featuresMaps[ itrComment ], type ) )
-        
+        outClassifierInputs.append( ( featuresMaps[ itrComment ], str(MinerMiscUtils.getCommentLabel(rawCsvCommentDict)) ) )
+
 def NaiveBayesClassify( trainInputs, testInputs ):
     logging.getLogger("NaiveBayes").info( "classify" )
     classifier = nltk.NaiveBayesClassifier.train( trainInputs )
     print nltk.classify.accuracy( classifier, testInputs )
     classifier.show_most_informative_features( 1000 );
-    
     return classifier
 
 def NaiveBayesGetPolicy():
