@@ -43,24 +43,26 @@ def addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps ):
             outFeaturesMaps[ itrComment ][ helpfullnessRatioKey ] =  2 # "HIGH"
 
 def addFeaturesPhrases( ctx, outFeaturesMaps ):
-    logging.getLogger("Features").info( "phrases" )
+    logging.getLogger("Features").info( "phrases2" )
     rawFilteredWords = [ word for ( word, count ) in ctx.mFilteredWords ]
-    for itrComment, partOfSpeechTokenizedComment in enumerate( ctx.mPartOfSpeechTokenizedComments ):
-        prevWord='$'
-        for itrWord, (word, partOfSpeech) in enumerate( partOfSpeechTokenizedComment ):
-            if ( MinerMiscUtils.isAdj( partOfSpeech ) or MinerMiscUtils.isNoun( partOfSpeech ) ):
-                stemmedWord = ctx.mStemmedTokenizedComments[ itrComment ][ itrWord ]
-                
-                phrase1 = prevWord + " " + stemmedWord
-                phrase2 = stemmedWord + " " + prevWord
-                
-                if(phrase1 in rawFilteredWords):
-                    outFeaturesMaps[ itrComment ][ phrase1 ] = 1
-                elif(phrase2 in rawFilteredWords):
-                    outFeaturesMaps[ itrComment ][ phrase2 ] = 1  
-               
-                prevWord = stemmedWord
-                
+    for itrComment, phrases in enumerate(ctx.mCommentPhrases):
+        for phrase in phrases:
+            prevWord='$'
+            for itrWord, (word, partOfSpeech) in enumerate( phrase ):
+                if ( MinerMiscUtils.isAdj( partOfSpeech ) or MinerMiscUtils.isNoun( partOfSpeech ) ):
+                    stemmedWord = word
+                    
+                    phrase1 = prevWord + " " + stemmedWord
+                    phrase2 = stemmedWord + " " + prevWord
+                    
+                    if(phrase1 in rawFilteredWords):
+                        #print "Adding:" + phrase1
+                        outFeaturesMaps[ itrComment ][ phrase1 ] = 1
+                    elif(phrase2 in rawFilteredWords):
+                        #print "Adding:" + phrase1
+                        outFeaturesMaps[ itrComment ][ phrase2 ] = 1  
+                   
+                    prevWord = stemmedWord
                 
 def addFeaturesWordExists( ctx, outFeaturesMaps ):
     logging.getLogger("Features").info( "word exists" )

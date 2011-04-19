@@ -67,6 +67,8 @@ class Context:
         
         self.mAuthorReviewPerComment=[]
         
+        self.mCommentPhrases=[]
+        
         productCount={}
         self.productAvgStars={}
         for rawReview in self.mRawCsvReviews:
@@ -90,6 +92,7 @@ class Context:
         for itrComment, rawCsvCommentDict in enumerate( self.mRawCsvComments ):
             logging.getLogger("Context").info("Processing (1-gram) comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
             
+            
             # Extract review identifier
             reviewId = rawCsvCommentDict["Review_ID"]
             
@@ -111,6 +114,30 @@ class Context:
             
             # Convert comment to lower case
             comment = rawCsvCommentDict["Comment"].lower();
+            
+            
+            punctTokenizedComment = nltk.WordPunctTokenizer().tokenize(comment)
+            
+            phraseSeparators=['.','?','!',';']
+            
+            phrases=[]
+            phrase=[]
+            for word in punctTokenizedComment:
+                if word in phraseSeparators:
+                    phrase = [ phraseWord for phraseWord in phrase if (phraseWord not in self.mStopWords)]
+                    phrase = nltk.pos_tag(phrase)
+                    phrase = [(stemmer.stem(word),part) for (word,part) in phrase]
+                    phrases.append(phrase)
+                    phrase=[]
+                else:
+                    phrase.append(word)
+                    
+            if len(phrase)>0:    
+                phrase = [ phraseWord for phraseWord in phrase if (phraseWord not in self.mStopWords)]
+                phrase = nltk.pos_tag(phrase)
+                phrases.append(phrase)
+                    
+            self.mCommentPhrases.append(phrases)
      
             # Replace punctuation with white space
             for punct in string.punctuation:
@@ -121,9 +148,12 @@ class Context:
             # Tokenize into list of words
             tokenizedComment = nltk.word_tokenize( comment )
             
+                    
             # Filter out stop words
             tokenizedComment[:] = [ word for word in tokenizedComment if ( word not in self.mStopWords ) ]     
         
+            
+            
             posTagComment=nltk.pos_tag(tokenizedComment)
             # Append a list of (word, part of speech) tuples
             self.mPartOfSpeechTokenizedComments.append( posTagComment)
