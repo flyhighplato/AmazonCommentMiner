@@ -12,6 +12,7 @@ import nltk
 from nltk.stem.porter import PorterStemmer
 import random
 import string
+import pickle
 
 # Structure for easier passing around of "global" parameters
 class Context:
@@ -246,4 +247,12 @@ class Context:
     def printFilteredWords(self):
         for itr, (word, count) in enumerate( self.mFilteredWords ):
             logging.getLogger("Context").info( str(itr) + ": " + word + " (" + str(count) + ")" )
-    
+
+def loadContext( cacheFileName, strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap  ):
+    ctx = False
+    if ( MinerMiscUtils.fileExists( cacheFileName ) == False ):
+        ctx = Context( strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap ) 
+        pickle.dump( ctx, open( cacheFileName, "wb" ) )
+    else:
+        ctx = pickle.load( open( cacheFileName ) )
+    return ctx
