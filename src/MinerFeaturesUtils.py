@@ -122,7 +122,6 @@ def isNameInComment( ctx, name, itrComment ):
     # return 1 if name was found, 0 otherwise
     return bNameInComment
 
-
 def addFeaturesReviewAuthorMentioned( ctx, outFeaturesMaps ):
     logging.getLogger("Features").info( "Review Author Mentioned" )
     assert( len( ctx.mAuthorReviewPerComment ) == len( ctx.mLowerCasePunctRemovedComments ) )
@@ -158,11 +157,24 @@ def addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps ):
     
 def addFeaturesCAR( ctx, outFeaturesMaps ):
     logging.getLogger("Features").info( "CAR" )
-    minSup = 0.1
-    minConf = 0.5
+    minSup = 0.1 # average support is around 0.28, stddev is ~0.2 (i think)
+    minConf = 0.6 # average confidence is around 0.58, stddev is ~0.2
     cacheFileName = "CARcache.txt"
-    
-    FHist = MinerCAR.CAR_conditional_apriori( ctx, outFeaturesMaps, cacheFileName, minSup, minConf )
-    
-    logging.getLogger("Features").info( "FHist = " + str( FHist ) )
-    # Do something with this!
+    FHistFlattenedFeaturesMapPair = MinerCAR.CAR_conditional_apriori( ctx, outFeaturesMaps, cacheFileName, minSup, minConf )
+   
+    FHist = FHistFlattenedFeaturesMapPair[0]
+    flattenedFeaturesMap = FHistFlattenedFeaturesMapPair[1]
+    uniqueCarKeysMap = {}
+   
+    for itrLevel in range( 1, len(FHist) ):
+        print "FHist=" + str(FHist) + "\n"
+        print "FHist[itrLevel]=" + str(FHist[itrLevel])
+        for CARObj in FHist[itrLevel]:
+            CARKey = ""
+            for enumFeatureKey in CARObj.condSet:
+                CARKey += str(flattenedFeaturesMap[enumFeatureKey][0])+"="+str(flattenedFeaturesMap[enumFeatureKey][1])+","
+            if ( CARKey in uniqueCarKeysMap ):
+                continue
+            logging.getLogger("Features").info( "Adding CAR: " + str(CARKey) )
+            for commentFeaturesMap in outFeaturesMaps:
+                commentFeaturesMap[ CARKey ] = CARObj.isContained( commentFeaturesMap, flattenedFeaturesMap )

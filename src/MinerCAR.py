@@ -42,6 +42,55 @@ class CAR:
             elif ( commentFeaturesMap[ featureKey ] != featureVal ):
                 return False
         return True
+
+class CARStats:
+# Constructor
+    def __init__( self ):
+        self.minRecordedSupport = sys.maxint
+        self.minRecordedConfidence = sys.maxint
+        self.maxRecordedSupport = -1
+        self.maxRecordedConfidence = -1
+        self.avgRecordedSupport = 0
+        self.avgRecordedConfidence = 0
+        self.varRecordedSupport = 0
+        self.varRecordedConfidence = 0
+    
+    # String representation
+    def __repr__(self):
+        strRepr =  "supRange=["+str(self.minRecordedSupport)+","+str(self.maxRecordedSupport)+"]\n"
+        strRepr += "confRange=["+str(self.minRecordedConfidence)+","+str(self.maxRecordedConfidence)+"]\n"
+        strRepr += "avgSup="+str(self.avgRecordedSupport)+", avgConf="+str(self.avgRecordedConfidence)+"\n"    
+        strRepr += "varSup="+str(self.varRecordedSupport)+", stddevSup="+str(math.sqrt(self.varRecordedSupport))+"\n"
+        strRepr += "varConf="+str(self.varRecordedConfidence)+", stddevConf="+str(math.sqrt(self.varRecordedConfidence))
+        return strRepr
+    
+    def updateForCAR( self, CARObj ):
+        # Update stats for support
+        if ( CARObj.support < self.minRecordedSupport ):
+            self.minRecordedSupport = CARObj.support
+        elif ( CARObj.support > self.maxRecordedSupport ):
+            self.maxRecordedSupport = CARObj.support
+        self.avgRecordedSupport += CARObj.support
+        # Update stats for confidence
+        if ( CARObj.confidence < self.minRecordedConfidence ):
+            self.minRecordedConfidence = CARObj.confidence
+        elif ( CARObj.confidence > self.maxRecordedConfidence ):
+            self.maxRecordedConfidence = CARObj.confidence
+        self.avgRecordedConfidence += CARObj.confidence
+    
+    def finalize( self, candidateCARObjs ):
+        self.avgRecordedSupport = self.avgRecordedSupport / len( candidateCARObjs )
+        self.avgRecordedConfidence = self.avgRecordedConfidence / len( candidateCARObjs )
+        # Determine variance and std deviation
+        for CARObj in candidateCARObjs:
+            sqDistSupport = CARObj.support - self.avgRecordedSupport
+            sqDistSupport *= sqDistSupport
+            self.varRecordedSupport += sqDistSupport
+            sqDistConfidence = CARObj.confidence - self.avgRecordedConfidence
+            sqDistConfidence *= sqDistConfidence
+            self.varRecordedConfidence += sqDistConfidence
+        self.varRecordedSupport /= len( candidateCARObjs )
+        self.varRecordedConfidence /= len( candidateCARObjs )
     
 # initializes labels for each comment and returns the set of unique labels
 def CAR_get_comment_labels( ctx ):
@@ -98,55 +147,6 @@ def CAR_update_candidate_counts( featuresMaps, commentLabels, flattenedFeaturesM
                 CARObj.condSetCount += 1.0
                 if label == CARObj.label:
                     CARObj.labelCount += 1.0
-
-class CARStats:
-# Constructor
-    def __init__( self ):
-        self.minRecordedSupport = sys.maxint
-        self.minRecordedConfidence = sys.maxint
-        self.maxRecordedSupport = -1
-        self.maxRecordedConfidence = -1
-        self.avgRecordedSupport = 0
-        self.avgRecordedConfidence = 0
-        self.varRecordedSupport = 0
-        self.varRecordedConfidence = 0
-    
-    # String representation
-    def __repr__(self):
-        strRepr =  "supRange=["+str(self.minRecordedSupport)+","+str(self.maxRecordedSupport)+"]\n"
-        strRepr += "confRange=["+str(self.minRecordedConfidence)+","+str(self.maxRecordedConfidence)+"]\n"
-        strRepr += "avgSup="+str(self.avgRecordedSupport)+", avgConf="+str(self.avgRecordedConfidence)+"\n"    
-        strRepr += "varSup="+str(self.varRecordedSupport)+", stddevSup="+str(math.sqrt(self.varRecordedSupport))+"\n"
-        strRepr += "varConf="+str(self.varRecordedConfidence)+", stddevConf="+str(math.sqrt(self.varRecordedConfidence))
-        return strRepr
-    
-    def updateForCAR( self, CARObj ):
-        # Update stats for support
-        if ( CARObj.support < self.minRecordedSupport ):
-            self.minRecordedSupport = CARObj.support
-        elif ( CARObj.support > self.maxRecordedSupport ):
-            self.maxRecordedSupport = CARObj.support
-        self.avgRecordedSupport += CARObj.support
-        # Update stats for confidence
-        if ( CARObj.confidence < self.minRecordedConfidence ):
-            self.minRecordedConfidence = CARObj.confidence
-        elif ( CARObj.confidence > self.maxRecordedConfidence ):
-            self.maxRecordedConfidence = CARObj.confidence
-        self.avgRecordedConfidence += CARObj.confidence
-    
-    def finalize( self, candidateCARObjs ):
-        self.avgRecordedSupport = self.avgRecordedSupport / len( candidateCARObjs )
-        self.avgRecordedConfidence = self.avgRecordedConfidence / len( candidateCARObjs )
-        # Determine variance and std deviation
-        for CARObj in candidateCARObjs:
-            sqDistSupport = CARObj.support - self.avgRecordedSupport
-            sqDistSupport *= sqDistSupport
-            self.varRecordedSupport += sqDistSupport
-            sqDistConfidence = CARObj.confidence - self.avgRecordedConfidence
-            sqDistConfidence *= sqDistConfidence
-            self.varRecordedConfidence += sqDistConfidence
-        self.varRecordedSupport /= len( candidateCARObjs )
-        self.varRecordedConfidence /= len( candidateCARObjs )
 
 def CAR_extract_frequent_rules( candidateCARObjs, minSup, minConf, n, outFrequentCARObjs ):
     logging.getLogger("CAR").info( "extract frequent rules" )
@@ -253,14 +253,15 @@ def CAR_apriori( ctx, featuresMaps, cacheFileName, minSup=0.1, minConf=0.5 ):
     #logging.getLogger("CAR").info( "FHist" + str(FHist) )
     
     # Serialize frequent lists to disk
-    pickle.dump( FHist, open( cacheFileName, "wb" ) )
+    FHistFlattenedFeaturesMapPair = [ FHist, flattenedFeaturesMap ]
+    pickle.dump( FHistFlattenedFeaturesMapPair, open( cacheFileName, "wb" ) )
     
 def CAR_conditional_apriori(ctx, featuresMaps, cacheFileName, minSup=0.1, minConf=0.5):
     logging.getLogger("CAR").info( "conditional apriori" )
     # See if cache exists
     if ( os.path.isfile(cacheFileName) == False ):
         CAR_apriori( ctx, featuresMaps, cacheFileName, minSup, minConf )
-        
-    FHist = pickle.load( open( cacheFileName ) )
-    return FHist
+    
+    FHistFlattenedFeaturesMapPair = pickle.load( open( cacheFileName ) )
+    return FHistFlattenedFeaturesMapPair
     
