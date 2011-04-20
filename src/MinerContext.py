@@ -18,26 +18,18 @@ import pickle
 class Context:
     
     # Constructor
-    def __init__( self, strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap ):
+    def __init__( self, mRawCsvComments, mRawCsvReviews, filterWordReviewOverlap ):
         # Log parameters
         logging.getLogger("Context").info( "Creating new context:" )
-        logging.getLogger("Context").info( "strPathToRawCsvComments: " + strPathToRawCsvComments )
-        logging.getLogger("Context").info( "filterWordCountMin: " + str(filterWordCountMin) )
-        logging.getLogger("Context").info( "filterWordCountMax: " + str(filterWordCountMax) )
         logging.getLogger("Context").info( "filterWordReviewOverlap: " + str(filterWordReviewOverlap) )
         
         # Load stop words
         self.mStopWords = nltk.corpus.stopwords.words('english')
         
-        self.mRawCsvReviews = csv.DictReader(open(strPathToRawCsvReviews))
-        self.mRawCsvReviews = [review for review in self.mRawCsvReviews]
+        self.mRawCsvReviews = mRawCsvReviews
                                                               
-        # Load and shuffle comment data
-        self.mRawCsvComments = csv.DictReader(open(strPathToRawCsvComments))
-        self.mRawCsvComments = [comment for comment in self.mRawCsvComments]
-        random.shuffle(self.mRawCsvComments)
-        #self.mRawCsvComments=self.mRawCsvComments[0:10]
-        
+        self.mRawCsvComments = mRawCsvComments
+       
         # Parallel list of lower case comments with punctuation removed
         self.mLowerCasePunctRemovedComments = []
         
@@ -248,11 +240,12 @@ class Context:
         for itr, (word, count) in enumerate( self.mFilteredWords ):
             logging.getLogger("Context").info( str(itr) + ": " + word + " (" + str(count) + ")" )
 
-def loadContext( cacheFileName, strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap  ):
+def loadContext( cacheFileName, strPathToRawCsvComments, strPathToRawCsvReviews, filterWordReviewOverlap  ):
     ctx = False
-    if ( MinerMiscUtils.fileExists( cacheFileName ) == False ):
-        ctx = Context( strPathToRawCsvComments, strPathToRawCsvReviews, filterWordCountMin, filterWordCountMax, filterWordReviewOverlap ) 
-        pickle.dump( ctx, open( cacheFileName, "wb" ) )
+    if ( cacheFileName == None or MinerMiscUtils.fileExists( cacheFileName ) == False ):
+        ctx = Context( strPathToRawCsvComments, strPathToRawCsvReviews, filterWordReviewOverlap ) 
+        if(cacheFileName != None):
+            pickle.dump( ctx, open( cacheFileName, "wb" ) )
     else:
         ctx = pickle.load( open( cacheFileName ) )
     return ctx
