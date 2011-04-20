@@ -10,6 +10,7 @@ import MinerContext
 import MinerNaiveBayes
 import MinerSvm
 import random
+import csv
 
 def initLogger(): 
     logging.basicConfig( level=logging.DEBUG,
@@ -66,19 +67,29 @@ def appMain():
     # Test classifier
     classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
     
-    count = 1
-    logging.getLogger("NaiveBayes").info( "show mis-classified" )
-    for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
-        probDist = classifier.prob_classify(featuresMaps[itrComment])
-        bClassifierIsPositive = probDist.prob('1')>0.5
-        bClassifierIsNegative = probDist.prob('0')>0.5
-        bCommentIsNegative = (rawCsvCommentDict[ "Thumbs Up!" ]=='0' and rawCsvCommentDict[ "Thumbs Down" ]=='0')
-        bCommentIsPositive = (rawCsvCommentDict[ "Thumbs Up!" ]=='1' or rawCsvCommentDict[ "Thumbs Down" ]=='1') 
-        if( ( bClassifierIsPositive and bCommentIsNegative ) or ( bClassifierIsNegative and bCommentIsPositive ) ):
-            errorFile.write(str("#" + str(count) + " \r\n 0:" + str(probDist.prob('0')) + " 1:" + str(probDist.prob('1'))) + "\r\n")
-            errorFile.write(str(rawCsvCommentDict["Comment"]) + "\r\n\r\n")
-            #errorFile.write(str(featuresMaps[itrComment]) + "\r\n\r\n")
-            count+=1
+    outputFile=open("output.txt",'w')
+    
+    if(classifierType == eClassifierType.NaiveBayes):
+        testRawCsvComments = csv.DictReader(open("../data/testing-data.csv"))
+        testRawCsvComments = [comment for comment in testRawCsvComments]
+        count = 1
+        logging.getLogger("NaiveBayes").info( "show mis-classified" )
+        for itrComment, rawCsvCommentDict in enumerate( testRawCsvComments ):
+            probDist = classifier.prob_classify(featuresMaps[itrComment])
+            bClassifierIsPositive = probDist.prob('1')>0.5
+            bClassifierIsNegative = probDist.prob('0')>0.5
+            bCommentIsNegative = (rawCsvCommentDict[ "Thumbs Up!" ]=='0' and rawCsvCommentDict[ "Thumbs Down" ]=='0')
+            bCommentIsPositive = (rawCsvCommentDict[ "Thumbs Up!" ]=='1' or rawCsvCommentDict[ "Thumbs Down" ]=='1') 
+            if( ( bClassifierIsPositive and bCommentIsNegative ) or ( bClassifierIsNegative and bCommentIsPositive ) ):
+                errorFile.write(str("#" + str(count) + " \r\n 0:" + str(probDist.prob('0')) + " 1:" + str(probDist.prob('1'))) + "\r\n")
+                errorFile.write(str(rawCsvCommentDict["Comment"]) + "\r\n\r\n")
+                #errorFile.write(str(featuresMaps[itrComment]) + "\r\n\r\n")
+                count+=1
+            
+            if(bClassifierIsPositive) :
+                outputFile.write("<" + str(rawCsvCommentDict["Comment_ID"]) + "><1>\r\n")
+            else:
+                outputFile.write("<" + str(rawCsvCommentDict["Comment_ID"]) + "><0>\r\n")
 
 if __name__ == '__main__':
     appMain()

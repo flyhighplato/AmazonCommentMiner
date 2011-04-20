@@ -41,7 +41,7 @@ def addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps ):
             outFeaturesMaps[ itrComment ][ helpfullnessRatioKey ] =  2 # "HIGH"
 
 def addFeaturesPhrases( ctx, outFeaturesMaps ):
-    logging.getLogger("Features").info( "phrases2" )
+    logging.getLogger("Features").info( "phrases" )
     rawFilteredWords = [ word for ( word, count ) in ctx.mFilteredWords ]
     for itrComment, phrases in enumerate(ctx.mCommentPhrases):
         for phrase in phrases:
