@@ -232,6 +232,16 @@ def CAR_apriori( ctx, featuresMaps, cacheFileName, minSup=0.1, minConf=0.5 ):
     logging.getLogger("CAR").info( str(len(CHist[-1])) + " Candidate 1-sequences have been generated.")
     logging.getLogger("CAR").info( str(len(FHist[-1])) + " Frequent 1-sequences have been generated.")
     
+    # Purge anything within confidence threshold
+    #thresh = 0.02
+    #for CARObj in CHist[-1]:
+    #    dist = math.fabs( CARObj.confidence - 0.5 )
+    #    if ( dist <= thresh ):
+    #        for enumFeatureKey in CARObj.condSet:
+    #            key = flattenedFeaturesMap[enumFeatureKey][0]
+    #            for featuresMap in featuresMaps:
+    #                featuresMap.pop( key, 0 )
+    
     maxK = 10
     for idxK in range( 1, maxK ):
         if ( len( FHist[-1] ) <= 0 ):

@@ -45,7 +45,7 @@ def nFoldCrossValidation(n, csvCommentsPath, csvReviewsPath, classifierType):
     rawCsvComments = csv.DictReader(open(csvCommentsPath))
     rawCsvComments = [comment for comment in rawCsvComments]
     random.shuffle(rawCsvComments);
-    rawCsvComments = rawCsvComments[0:100]
+    #rawCsvComments = rawCsvComments[0:100]
     
     rawCsvReviews = csv.DictReader(open(csvReviewsPath))
     rawCsvReviews = [review for review in rawCsvReviews]
@@ -55,6 +55,7 @@ def nFoldCrossValidation(n, csvCommentsPath, csvReviewsPath, classifierType):
     sectionSize=totalComments/nFoldness;
     for startIx in range(0,totalComments,sectionSize):
         # Pre-process data
+
         # ctxCacheFileName = "ctxCache.txt"
         trainSet = rawCsvComments[0:startIx]
         trainSet.extend(rawCsvComments[startIx+sectionSize:])
@@ -129,12 +130,12 @@ def trainAndClassify(csvCommentsPath,csvCommentsPathTest,csvReviewsPath,classifi
     classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
 
     writeOutput(ctxTest,featuresMapsTest,classifierType,classifier)
+
 def appMain():
     
     # Select our classifier policy
     classifierType = eClassifierType.NaiveBayes
-    
-    
+        
     # initialize our logger
     initLogger()
 

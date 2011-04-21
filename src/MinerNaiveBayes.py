@@ -20,6 +20,7 @@ def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps ):
     MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
     MinerFeaturesUtils.addFeaturesReviewAuthorMentioned(ctx, outFeaturesMaps)
     MinerFeaturesUtils.addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps )
+    #MinerFeaturesUtils.addFeaturesDist( ctx, outFeaturesMaps )
     MinerFeaturesUtils.addFeaturesCAR( ctx, outFeaturesMaps )
     
 def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
