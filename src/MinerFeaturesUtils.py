@@ -7,6 +7,7 @@ MinerFeaturesUtils.py
 
 import logging
 import MinerMiscUtils
+import math
 import nltk
 import string
 import MinerCAR
@@ -89,7 +90,7 @@ def addFeaturesAuthorFreqInReview( ctx, outFeaturesMaps):
         else:
             outFeaturesMaps[ itrComment ][isAuthorKey]=0
             
-        outFeaturesMaps[ itrComment ][reviewStarsKey]=ctx.mReviewStarMap[reviewId]
+        outFeaturesMaps[ itrComment ][reviewStarsKey]=float(ctx.mReviewStarMap[reviewId])
         
         if(ctx.mReviewStarMap[reviewId]>ctx.productAvgStars):
             outFeaturesMaps[ itrComment ][reviewStarsDeviationKey]=-1
@@ -156,6 +157,69 @@ def addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps ):
                 bNameFound = 1
                 break
         outFeaturesMaps[ itrComment ][ commentAuthorNameInCommentKey ] = bNameFound
+
+def addFeaturesDist( ctx, outFeaturesMaps ):
+    # Centroids for each class label
+    centroids = [{}, {}]
+    
+    # Sum up all features vectors
+    for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
+        label = MinerMiscUtils.getCommentLabel(rawCsvCommentDict)
+        for key, value in outFeaturesMaps[ itrComment ].iteritems():
+            if ( type( value ) is str ):
+                print "BREAK = " + key + " = " + value + "\n"
+            if ( key in centroids[label]):
+                centroids[label][key] += value
+            else:
+                centroids[label][key] = value
+            
+            for altLabel in range( len(centroids ) ):
+                if ( altLabel != label ):
+                    if key not in centroids[ altLabel ]:
+                        centroids[ altLabel ][key] = 0.0
+    
+    # Average the centroids
+    for centroid in centroids:
+        for key, value in centroid.iteritems():
+            value /= len( outFeaturesMaps )
+            centroid[ key ] = value
+    
+    # Determine distance from both centroids
+    distances = [ [], [] ]
+    averageDistance = [ 0.0, 0.0 ]    
+    for featuresMap in outFeaturesMaps:
+        for label, centroid in enumerate(centroids):
+            totalSqDist = 0.0
+            for centroidKey, centroidValue in centroid.iteritems():
+                commentValue = 0.0
+                if ( centroidKey in featuresMap ):
+                    commentValue = featuresMap[ centroidKey ]
+                sqDist = commentValue - centroidValue
+                sqDist *= sqDist
+                totalSqDist += sqDist
+            totalDist = math.sqrt( totalSqDist )
+            distances[label].append( totalDist )
+            averageDistance[label] += totalDist 
+    
+    for label in range( len( averageDistance ) ):
+        averageDistance[ label ] /= len( outFeaturesMaps )
+    
+    # Determine standard deviation
+    averageStdDev = [ 0, 0 ]
+    for label, labelDistances in enumerate( distances ):
+        for distance in labelDistances:
+            sqDistFromMean = distance - averageDistance[ label ]
+            sqDistFromMean *= sqDistFromMean
+            averageStdDev[ label ] += sqDistFromMean
+    
+    for label in range( len( averageStdDev ) ):
+        averageStdDev[ label ] /= len( outFeaturesMaps )
+        averageStdDev[ label ]  = math.sqrt( averageStdDev[ label ] )
+        
+    # Map all feature vectors as being closer or farther from std dev
+    for itrComment, featuresMap in enumerate(outFeaturesMaps):
+        for label, stdDev in enumerate( averageStdDev ):
+            featuresMap[ "Dist--"+str(label) ] = distances[ label ][ itrComment ] > stdDev
     
 def addFeaturesCAR( ctx, outFeaturesMaps ):
     logging.getLogger("Features").info( "CAR" )
@@ -178,3 +242,4 @@ def addFeaturesCAR( ctx, outFeaturesMaps ):
             logging.getLogger("Features").info( "Adding "+str(len(CARObj.condSet))+"-CAR: " + str(CARKey) )
             for commentFeaturesMap in outFeaturesMaps:
                 commentFeaturesMap[ CARKey ] = CARObj.isContained( commentFeaturesMap, flattenedFeaturesMap )
+
