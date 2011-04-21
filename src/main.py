@@ -21,7 +21,7 @@ def initLogger():
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
     console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
+    #logging.getLogger('').addHandler(console)
 
 # Function callback offsets 
 class eClassifierCB:
@@ -53,14 +53,14 @@ def nFoldCrossValidation(n, csvCommentsPath, csvReviewsPath, classifierType):
     totalComments = len(rawCsvComments)
     nFoldness=n
     sectionSize=totalComments/nFoldness;
-    for startIx in range(1,totalComments,sectionSize):
+    for startIx in range(0,totalComments,sectionSize):
         # Pre-process data
         # ctxCacheFileName = "ctxCache.txt"
-        trainSet = rawCsvComments[1:startIx]
+        trainSet = rawCsvComments[0:startIx]
         trainSet.extend(rawCsvComments[startIx+sectionSize:])
         
         trainInputs=getFeatureSet(None,trainSet,rawCsvReviews,classifierPolicy);
-        testInputs=getFeatureSet(None,rawCsvComments[startIx+1:startIx+sectionSize-1],rawCsvReviews,classifierPolicy)
+        testInputs=getFeatureSet(None,rawCsvComments[startIx:startIx+sectionSize-1],rawCsvReviews,classifierPolicy)
         
         # Test classifier
         classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
