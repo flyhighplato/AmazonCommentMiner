@@ -11,6 +11,7 @@ import MinerNaiveBayes
 import MinerSvm
 import random
 import csv
+import nltk
 
 def initLogger(): 
     logging.basicConfig( level=logging.DEBUG,
@@ -21,7 +22,7 @@ def initLogger():
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
     console.setFormatter(formatter)
-    #logging.getLogger('').addHandler(console)
+    logging.getLogger('').addHandler(console)
 
 # Function callback offsets 
 class eClassifierCB:
@@ -86,24 +87,29 @@ def writeOutput(ctxTest,featuresMapsTest,classifierType,classifier):
     if(classifierType == eClassifierType.NaiveBayes):
         testRawCsvComments = ctxTest.mRawCsvComments #csv.DictReader(open("../data/testing-data.csv"))
         #testRawCsvComments = [comment for comment in testRawCsvComments]
-        count = 1
-        logging.getLogger("NaiveBayes").info( "show mis-classified" )
+            
+#        count = 1
+#        logging.getLogger("NaiveBayes").info( "show mis-classified" )
+#        for itrComment, rawCsvCommentDict in enumerate( testRawCsvComments ):
+#            probDist = classifier.prob_classify(featuresMapsTest[itrComment])
+#            bClassifierIsPositive = probDist.prob('1')>0.5
+#            bClassifierIsNegative = probDist.prob('0')>0.5
+#            bCommentIsNegative = (rawCsvCommentDict[ "Thumbs Up!" ]=='0' and rawCsvCommentDict[ "Thumbs Down" ]=='0')
+#            bCommentIsPositive = (rawCsvCommentDict[ "Thumbs Up!" ]=='1' or rawCsvCommentDict[ "Thumbs Down" ]=='1') 
+#            if( ( bClassifierIsPositive and bCommentIsNegative ) or ( bClassifierIsNegative and bCommentIsPositive ) ):
+#                errorFile.write(str("#" + str(count) + " \r\n 0:" + str(probDist.prob('0')) + " 1:" + str(probDist.prob('1'))) + "\r\n")
+#                errorFile.write(str(rawCsvCommentDict["Comment"]) + "\r\n\r\n")
+#                #errorFile.write(str(featuresMaps[itrComment]) + "\r\n\r\n")
+#                count+=1
+        
         for itrComment, rawCsvCommentDict in enumerate( testRawCsvComments ):
             probDist = classifier.prob_classify(featuresMapsTest[itrComment])
             bClassifierIsPositive = probDist.prob('1')>0.5
-            bClassifierIsNegative = probDist.prob('0')>0.5
-            bCommentIsNegative = (rawCsvCommentDict[ "Thumbs Up!" ]=='0' and rawCsvCommentDict[ "Thumbs Down" ]=='0')
-            bCommentIsPositive = (rawCsvCommentDict[ "Thumbs Up!" ]=='1' or rawCsvCommentDict[ "Thumbs Down" ]=='1') 
-            if( ( bClassifierIsPositive and bCommentIsNegative ) or ( bClassifierIsNegative and bCommentIsPositive ) ):
-                errorFile.write(str("#" + str(count) + " \r\n 0:" + str(probDist.prob('0')) + " 1:" + str(probDist.prob('1'))) + "\r\n")
-                errorFile.write(str(rawCsvCommentDict["Comment"]) + "\r\n\r\n")
-                #errorFile.write(str(featuresMaps[itrComment]) + "\r\n\r\n")
-                count+=1
-            
+            #bClassifierIsNegative = probDist.prob('0')>0.5
             if(bClassifierIsPositive) :
-                outputFile.write("<" + str(rawCsvCommentDict["Comment_ID"]) + "><1>\r\n")
+                outputFile.write("(" + str(rawCsvCommentDict["Comment_ID"]) + " 1)\r\n")
             else:
-                outputFile.write("<" + str(rawCsvCommentDict["Comment_ID"]) + "><0>\r\n")
+                outputFile.write("(" + str(rawCsvCommentDict["Comment_ID"]) + " 0)\r\n")
 
 def trainAndClassify(csvCommentsPath,csvCommentsPathTest,csvReviewsPath,classifierType):
     classifierPolicy = getClassifierPolicy( classifierType )
@@ -115,20 +121,35 @@ def trainAndClassify(csvCommentsPath,csvCommentsPathTest,csvReviewsPath,classifi
     rawCsvCommentsTest = csv.DictReader(open(csvCommentsPathTest))
     rawCsvCommentsTest = [comment for comment in rawCsvCommentsTest]
     #rawCsvCommentsTest = rawCsvCommentsTest[0:10]
-    
+        
     rawCsvReviews = csv.DictReader(open(csvReviewsPath))
     rawCsvReviews = [review for review in rawCsvReviews]
     
-    trainInputs=getFeatureSet(None,rawCsvComments,rawCsvReviews,classifierPolicy);
+
+    ctx = MinerContext.loadContext(None, rawCsvComments,rawCsvReviews,0.3 )
+    #ctxTest.mFilteredWords=ctx.mFilteredWords
+    
+    featuresMaps = []
+    classifierPolicy[ eClassifierCB.PrepareFeatures ]( ctx, featuresMaps )
+    
+    trainInputs=getFeatureSet3(ctx,featuresMaps,classifierPolicy)
+    
+    #trainInputs=getFeatureSet(None,rawCsvComments,rawCsvReviews,classifierPolicy);
     
     ctxTest = MinerContext.loadContext(None, rawCsvCommentsTest,rawCsvReviews,0.3 )
+
+    ctxTest.mFilteredWords=ctx.mFilteredWords
+    #ctxTest.m
+    
     featuresMapsTest = []
     classifierPolicy[ eClassifierCB.PrepareFeatures ]( ctxTest, featuresMapsTest )
     
-    testInputs=getFeatureSet3(ctxTest,featuresMapsTest,classifierPolicy)
+    #testInputs=getFeatureSet3(ctxTest,featuresMapsTest,classifierPolicy)
     
-    classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, testInputs )
+    
+    classifier = classifierPolicy[ eClassifierCB.Classify ]( trainInputs, None )
 
+        
     writeOutput(ctxTest,featuresMapsTest,classifierType,classifier)
 
 def appMain():
@@ -140,11 +161,11 @@ def appMain():
     initLogger()
 
     csvCommentsPath="../data/training-data.csv"
-    csvCommentsPathTest="../data/testing-data.csv"
+    csvCommentsPathTest="../data/test-data-no-label.csv"
     csvReviewsPath="../data/all-reviews.csv"
     
-    nFoldCrossValidation(5, csvCommentsPath, csvReviewsPath, classifierType)
-    #trainAndClassify(csvCommentsPath,csvCommentsPathTest,csvReviewsPath,classifierType)
+    #nFoldCrossValidation(5, csvCommentsPath, csvReviewsPath, classifierType)
+    trainAndClassify(csvCommentsPath,csvCommentsPathTest,csvReviewsPath,classifierType)
     
 
 if __name__ == '__main__':

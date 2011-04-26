@@ -32,8 +32,8 @@ def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
 def NaiveBayesClassify( trainInputs, testInputs ):
     logging.getLogger("NaiveBayes").info( "classify" )
     classifier = nltk.NaiveBayesClassifier.train( trainInputs )
-    print nltk.classify.accuracy( classifier, testInputs )
-    classifier.show_most_informative_features( 10 );
+    #print nltk.classify.accuracy( classifier, testInputs )
+    #classifier.show_most_informative_features( 10 );
     return classifier
 
 def NaiveBayesGetPolicy():
