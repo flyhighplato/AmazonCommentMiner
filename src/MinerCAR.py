@@ -268,6 +268,8 @@ def CAR_conditional_apriori(ctx, featuresMaps, cacheFileName, minSup=0.1, minCon
     # See if cache exists
     if ( MinerMiscUtils.fileExists( cacheFileName ) == False ):
         CAR_apriori( ctx, featuresMaps, cacheFileName, minSup, minConf )
+    else:
+        logging.getLogger("CAR").info( "Found cache: " +  cacheFileName )
     
     FHistFlattenedFeaturesMapPair = pickle.load( open( cacheFileName ) )
     return FHistFlattenedFeaturesMapPair

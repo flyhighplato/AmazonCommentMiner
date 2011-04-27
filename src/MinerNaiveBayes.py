@@ -9,31 +9,46 @@ import logging
 import MinerMiscUtils
 import MinerFeaturesUtils
 import nltk
-    
-def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps ):
+
+def NaiveBayesPrepareFeatures( ctx, outFeaturesMaps, featuresBitMask ):
     logging.getLogger("NaiveBayes").info( "prepare features" )
     MinerFeaturesUtils.initFeatures( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesCommentLength( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesPhrases( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesWordExists( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
-    MinerFeaturesUtils.addFeaturesReviewAuthorMentioned(ctx, outFeaturesMaps)
-    MinerFeaturesUtils.addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps )
-    #MinerFeaturesUtils.addFeaturesDist( ctx, outFeaturesMaps )
-    MinerFeaturesUtils.addFeaturesCAR( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.wordExists ):
+        MinerFeaturesUtils.addFeaturesWordExists( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.commentLength ):
+        MinerFeaturesUtils.addFeaturesCommentLength( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.helpfullnessRatio ):
+        MinerFeaturesUtils.addFeaturesHelpfulnessRatio( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.authorFreqInReview ):
+        MinerFeaturesUtils.addFeaturesAuthorFreqInReview(ctx, outFeaturesMaps)
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.reviewAuthorMentioned ):
+        MinerFeaturesUtils.addFeaturesReviewAuthorMentioned(ctx, outFeaturesMaps)
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.commentAuthorMentioned ):
+        MinerFeaturesUtils.addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.dist ):
+        MinerFeaturesUtils.addFeaturesDist( ctx, outFeaturesMaps )
+    if ( featuresBitMask & MinerFeaturesUtils.eFeaturesMaskBits.phrases ):
+        MinerFeaturesUtils.addFeaturesPhrases( ctx, outFeaturesMaps )
     
-def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs ):
+def NaiveBayesGetClassifierInputs( ctx, featuresMaps, outClassifierInputs, bTrain ):
     logging.getLogger("NaiveBayes").info( "get classifier inputs" )
     outClassifierInputs[:] = []
     for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
-        outClassifierInputs.append( ( featuresMaps[ itrComment ], str(MinerMiscUtils.getCommentLabel(rawCsvCommentDict)) ) )
+        strLabel = "?"
+        if ( bTrain ):
+            strLabel = str(MinerMiscUtils.getCommentLabel(rawCsvCommentDict))
+        outClassifierInputs.append( ( featuresMaps[ itrComment ], strLabel ) )
 
-def NaiveBayesClassify( trainInputs, testInputs ):
+def NaiveBayesClassify( trainInputs, testInputs, bDebug, outDebugFileName, outDebugLabel ):
     logging.getLogger("NaiveBayes").info( "classify" )
     classifier = nltk.NaiveBayesClassifier.train( trainInputs )
-    #print nltk.classify.accuracy( classifier, testInputs )
-    #classifier.show_most_informative_features( 10 );
+    if ( bDebug ):
+        accuracy = nltk.classify.accuracy( classifier, testInputs )
+        fileHandle = open ( outDebugFileName, 'a' )
+        fileHandle.write ( outDebugLabel + "," + str(accuracy) + '\n' )
+        fileHandle.close()
+        print "Accuracy = " + str(accuracy) + '\n'
+        classifier.show_most_informative_features( 10 );
     return classifier
 
 def NaiveBayesGetPolicy():

@@ -11,6 +11,19 @@ import math
 import nltk
 import string
 import MinerCAR
+import pickle
+
+# Function callback offsets 
+class eFeaturesMaskBits:
+    wordExists = 1 << 0
+    commentLength = 1 << 1
+    helpfullnessRatio = 1 << 2
+    authorFreqInReview = 1 << 3
+    reviewAuthorMentioned = 1 << 4
+    commentAuthorMentioned = 1 << 5
+    dist = 1 << 6
+    phrases = 1 << 7
+    CAR = 1 << 8
 
 # Appends an empty features set dictionary for each comment
 def initFeatures( ctx, outFeaturesMaps ):
@@ -66,12 +79,13 @@ def addFeaturesPhrases( ctx, outFeaturesMaps ):
 def addFeaturesWordExists( ctx, outFeaturesMaps ):
     logging.getLogger("Features").info( "word exists" )
     for itrComment, stemmedTokenizedComment in enumerate( ctx.mStemmedTokenizedComments ):
-        for ( word, count ) in ctx.mAdjAndNounWordCountMap.iteritems():  
+        for ( word, count ) in ctx.mAdjAndNounWordCountMap.iteritems():
+        #for ( word, count ) in ctx.mFilteredWords: 
             if ( stemmedTokenizedComment.count( word ) > 0 ):
                 outFeaturesMaps[ itrComment ][ word ] = 1
             else:
                 outFeaturesMaps[ itrComment ][ word ] = 0
-                
+
 def addFeaturesAuthorFreqInReview( ctx, outFeaturesMaps):
     logging.getLogger("Features").info( "author frequency" )
     multiCommentKey="M-C"
@@ -159,31 +173,40 @@ def addFeaturesCommentAuthorMentioned( ctx, outFeaturesMaps ):
         outFeaturesMaps[ itrComment ][ commentAuthorNameInCommentKey ] = bNameFound
 
 def addFeaturesDist( ctx, outFeaturesMaps ):
+    logging.getLogger("Features").info( "Distance" )
+
     # Centroids for each class label
-    centroids = [{}, {}]
-    
-    # Sum up all features vectors
-    for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
-        label = MinerMiscUtils.getCommentLabel(rawCsvCommentDict)
-        for key, value in outFeaturesMaps[ itrComment ].iteritems():
-            if ( type( value ) is str ):
-                print "BREAK = " + key + " = " + value + "\n"
-            if ( key in centroids[label]):
-                centroids[label][key] += value
-            else:
-                centroids[label][key] = value
-            
-            for altLabel in range( len(centroids ) ):
-                if ( altLabel != label ):
-                    if key not in centroids[ altLabel ]:
-                        centroids[ altLabel ][key] = 0.0
-    
-    # Average the centroids
-    for centroid in centroids:
-        for key, value in centroid.iteritems():
-            value /= len( outFeaturesMaps )
-            centroid[ key ] = value
-    
+    centroids = [{}, {}]    
+    centroidsCacheFileName = "centroidsCache.txt"
+    if ( MinerMiscUtils.fileExists(centroidsCacheFileName)):
+        # Load from cache!
+        centroids = pickle.load( open( centroidsCacheFileName ) )
+    else:
+        # Sum up all features vectors
+        for itrComment, rawCsvCommentDict in enumerate( ctx.mRawCsvComments ):
+            label = MinerMiscUtils.getCommentLabel(rawCsvCommentDict)
+            for key, value in outFeaturesMaps[ itrComment ].iteritems():
+                if ( type( value ) is str ):
+                    print "BREAK = " + key + " = " + value + "\n"
+                if ( key in centroids[label]):
+                    centroids[label][key] += value
+                else:
+                    centroids[label][key] = value
+                
+                for altLabel in range( len(centroids ) ):
+                    if ( altLabel != label ):
+                        if key not in centroids[ altLabel ]:
+                            centroids[ altLabel ][key] = 0.0
+        
+        # Average the centroids
+        for centroid in centroids:
+            for key, value in centroid.iteritems():
+                value /= len( outFeaturesMaps )
+                centroid[ key ] = value
+        
+        # Cache the centroids to disk
+        pickle.dump( centroids, open( centroidsCacheFileName, "wb" ) )
+        
     # Determine distance from both centroids
     distances = [ [], [] ]
     averageDistance = [ 0.0, 0.0 ]    
@@ -221,11 +244,10 @@ def addFeaturesDist( ctx, outFeaturesMaps ):
         for label, stdDev in enumerate( averageStdDev ):
             featuresMap[ "Dist--"+str(label) ] = distances[ label ][ itrComment ] > stdDev
     
-def addFeaturesCAR( ctx, outFeaturesMaps ):
+def addFeaturesCAR( ctx, outFeaturesMaps, minSup=0.1, minConf=0.6, cacheFileName="CARcache.txt" ):
     logging.getLogger("Features").info( "CAR" )
-    minSup = 0.1 # average support is around 0.28, stddev is ~0.2 (i think)
-    minConf = 0.6 # average confidence is around 0.58, stddev is ~0.2
-    cacheFileName = "CARcache.txt"
+    # Note: average support is around 0.28, stddev is ~0.2 (i think)
+    # Note: average confidence is around 0.58, stddev is ~0.2
     FHistFlattenedFeaturesMapPair = MinerCAR.CAR_conditional_apriori( ctx, outFeaturesMaps, cacheFileName, minSup, minConf )
    
     FHist = FHistFlattenedFeaturesMapPair[0]

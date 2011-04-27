@@ -85,7 +85,6 @@ class Context:
         for itrComment, rawCsvCommentDict in enumerate( self.mRawCsvComments ):
             logging.getLogger("Context").info("Processing (1-gram) comment " + str(itrComment) + " of " + str(len(self.mRawCsvComments)) )
             
-            
             # Extract review identifier
             reviewId = rawCsvCommentDict["Review_ID"]
             
@@ -107,7 +106,6 @@ class Context:
             
             # Convert comment to lower case
             comment = rawCsvCommentDict["Comment"].lower();
-            
             
             punctTokenizedComment = nltk.WordPunctTokenizer().tokenize(comment)
             
@@ -140,13 +138,10 @@ class Context:
             
             # Tokenize into list of words
             tokenizedComment = nltk.word_tokenize( comment )
-            
                     
             # Filter out stop words
             tokenizedComment[:] = [ word for word in tokenizedComment if ( word not in self.mStopWords ) ]     
-        
-            
-            
+    
             posTagComment=nltk.pos_tag(tokenizedComment)
             # Append a list of (word, part of speech) tuples
             self.mPartOfSpeechTokenizedComments.append( posTagComment)
@@ -247,5 +242,6 @@ def loadContext( cacheFileName, strPathToRawCsvComments, strPathToRawCsvReviews,
         if(cacheFileName != None):
             pickle.dump( ctx, open( cacheFileName, "wb" ) )
     else:
+        logging.getLogger("Context").info( "Found context cache: " +  cacheFileName )
         ctx = pickle.load( open( cacheFileName ) )
     return ctx
