@@ -1,10 +1,21 @@
 \documentclass[]{report} 
 \usepackage{wrapfig}
+\usepackage{float}
+
+% Graphics pacakges
+\ifx\pdfoutput\undefined
+  % we are running LaTeX, not pdflatex
+  \usepackage{graphicx}
+\else
+  % we are running pdflatex, so convert .eps files to .pdf
+  \usepackage[pdftex]{graphicx}
+  \usepackage{epstopdf}
+\fi
 
 \begin{document}
 
 \title{Amazon Review Sentiment Analysis} 
-\author{Alan Q. Pereze-Rathke \and Gary Turovsky}
+\author{Alan Q. Perez-Rathke \and Gary Turovsky}
 \date{April 28, 2011}   
 \maketitle
 
@@ -88,6 +99,51 @@ We made one more attempt to improve the feature vector.  We attempted to create 
 One final note here about using an SVM for classification.  We used the libsvm package which comes with a handy little python script which makes the classification process "fool-proof".  This script first estimates parameters for an rbf kernel before doing the actual classification.  Each such run took a much longer time than the naive bayes classifier (which made working on improving this classifier quite a bit more difficult) and it also never outperformed the naive bayes classifier, besides being inconsistent to boot.  We saw accuracies of anywhere between 60\% and 80\%, which we thought would not be acceptable if we were to be competitive with the other teams.  We really wanted the SVM to work, but it would always disappoint.
 
 \section{Experiments}
+
+In the interest of determining which features were most valuable, we ran several experiments to see how each contributed to the final accuracy of the classifier.  First, we ran the classifier using only a base feature set: whether or not a word exists within a comment.  We then ran the classifier using the base feature set combined with only a single other set.  The results of these experiments are shown in \ref{fig:MinimalFeatureSets}.  From this, we can see that many of the additional features, such as helpfulness ratio, appear to actually be detrimental to the final accuracy.  Furthermore, we can immediately see that 2-word phrases (also referred to as 2-gram phrases) and CAR mining significantly increase accuracy.
+\begin{figure}[H]
+\centering
+\includegraphics[width=3.77in]{AccuracyVsFeatureSets.jpg}
+\caption{The resulting accuracies when only a single feature set is combined with the base feature set.  The base feature set consists only of whether or not a word exists in a comment.}
+\label{fig:MinimalFeatureSets}
+\end{figure}
+
+Next, we ran a series of experiments that combined multiple feature sets.  The results can be seen in \ref{fig:MultiFeatureSets}.  From this, we can see that, without using CAR mining, the maximum  accuracy remains at just over 71\%.  However, with the addition of CAR features, the accuracy jumps to just over 76 \%.  Furthermore, the boost from CAR mining is dependent on the existence of the "2-gram phrases" and ''Author frequency in review" feature sets (which contain whether or not the commentor has posted before and if the author of a review is commenting).  From this, we can see that our highest quality is achieved by solely using these feature sets - inclusion of additional feature sets only reduces quality.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=3.77in]{AccuracyVsMultiFeatureSets.jpg}
+\caption{The resulting accuracies when only multiple feature sets are combined with the base feature set.}
+\label{fig:MultiFeatureSets}
+\end{figure}
+
+The ''2-gram phrases" features set, which consists of adjective and noun pairs that appear consecutively within a comment, has proven to be one of the most valuable sets in terms of accuracy.  From \ref{fig:WordCountSupport}, we can see how accuracy is influenced by the minimum support (i.e. how often a word appears in different reviews) for words allowed in the pairings.  When the minimum support is below 30\%, too many misleading phrases are generated and the accuracy suffers.  In contrast, when the minimum support is above 30\%, too few phrases are generated and again the accuracy pays a penalty.  From this data, we can conclude that 30\% is a near optimal setting for support threshhold. 
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=3.77in]{AccuracyVsWordCountSupport.jpg}
+\caption{The resulting accuracies when word count support is varied.  Accuracies are the result of the base feature set combined with 2-gram phrases.}
+\label{fig:WordCountSupport}
+\end{figure}
+
+
+Other parameters of interest include CAR minimum support and minimum confidence threshholds.  From \ref{fig:CARMinSup}, we can see that accuracy peaks when the minimum support threshhold is at 10\%.  We can surmise that lower values generate too many CAR associations and high values generate too few associations; therefore, both of these cases result in a decline in accuracy.  A similar analysis can be done for CAR minimum confidence as shown in \ref{fig:CARMinConf}.  We can see that when minimum confidence is below 58\% or above 61\%, accuracy declines from either too many or too few associations respectively. 
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=3.77in]{AccuracyVsCARMinimumSupport.jpg}
+\caption{The resulting accuracies when the minimum support for CAR mining is varied.  Accuracies are the result of the base feature set combined with 2-gram phrases and author frequencies.}
+\label{fig:CARMinSup}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=3.77in]{AccuracyVsCARMinimumConfidence.jpg}
+\caption{The resulting accuracies when the minimum confidence for CAR mining is varied.  Accuracies are the result of the base feature set combined with 2-gram phrases and author frequencies.}
+\label{fig:CARMinConf}
+\end{figure}
+
 \section{Conclusion and Further Work}
 Our work on this project has mainly revolved around creating the optimum feature vector such that a naive bayes classifier would be able to better discriminate between the two classes.  In a way this is a bit of a boring approach and it would have felt a lot better to find something more interesting and innovative that did far better.  Without having a good way to understand language, this seemed like a daunting task.  In order to really understand sentiment, we have to be able to extract meaning from a text.  One could even venture to say that in a lot of ways, knowing the feeling in a sentence is a huge step towards understanding its meaning.
 
@@ -97,7 +153,7 @@ It also seems that we could have taken more risks.  Something interesting to try
 
 Two HMMs could be trained.  One for comments with sentiments about the review and one for comments without sentiments about the review.  When doing the testing, the classifier would calculate which HMM the word sequence was most likely to come from.  Such a set of models might also be interesting since we could use them to generate examples of comments from either class.
 
-We certainly feel we could have done a lot better if we had gone into it knowing what we know now about the problem.  Our ultimate goal was to get into the 80\% range, but we never managed to do it.  That would have given us greater confidence about our approach and made winning the the class contest a bit sweeter.  Despite this, it is our opinion that we managed to squeeze out an impressive amount of accuracy from a naive bayes classifier, and this has some merit.
+We certainly feel we could have done a lot better if we had gone into it knowing what we know now about the problem.  Our ultimate goal was to get into the 80\% range, but we never managed to do it.  That would have given us greater confidence about our approach and made winning the class contest a bit sweeter.  Despite this, it is our opinion that we managed to squeeze out an impressive amount of accuracy from a naive bayes classifier, and this has some merit.
 
 
 
