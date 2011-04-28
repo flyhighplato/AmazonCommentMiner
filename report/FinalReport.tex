@@ -31,7 +31,7 @@ Amazon is a large online retailer which naturally has such product sentiment dat
 	\label{figExampleReviews}
 \end{figure}
 
-We believed that the simplest approach would be the best approach here.  Or, at the very least, would allow us to create a baseline from which to improve our results. 
+We believed that the simplest approach would be the best approach here.  At least at first, we did not want to create a new type of classifier.  We wanted to use known classifiers to create a baseline from which to improve our results. 
 
 \section{Techniques Used}
 
@@ -91,11 +91,13 @@ One final note here about using an SVM for classification.  We used the libsvm p
 \section{Conclusion and Further Work}
 Our work on this project has mainly revolved around creating the optimum feature vector such that a naive bayes classifier would be able to better discriminate between the two classes.  In a way this is a bit of a boring approach and it would have felt a lot better to find something more interesting and innovative that did far better.  Without having a good way to understand language, this seemed like a daunting task.  In order to really understand sentiment, we have to be able to extract meaning from a text.  One could even venture to say that in a lot of ways, knowing the feeling in a sentence is a huge step towards understanding its meaning.
 
-In the course of working on this project, we regret that we could never get SVM accurate to the extent that we were sure it could be.  It seemed, by all accounts we were aware, that an SVM would be perfect for dealing with text data.  Perhaps further tweaking or using a different kernel could have yielded better results.  Maybe a simpler kernel could have also reduced the training time.
+In the course of working on this project, it is unfortunate that we could never be consistently accurate with an SVM.  It seemed, by all accounts we were aware, that an SVM would be perfect for dealing with text data.  Perhaps further tweaking or using a different kernel could have yielded better results.  Maybe a simpler kernel could have also reduced the training time.
 
 It also seems that we could have taken more risks.  Something interesting to try would be a sort of Hidden Markov Model approach.  Let's say that, in our HMM, each word is a state.  It has a transition probability between it and another state that depends on how often these words co-occur in a sentence.  The observation for each state would be the word for each state.
 
 Two HMMs could be trained.  One for comments with sentiments about the review and one for comments without sentiments about the review.  When doing the testing, the classifier would calculate which HMM the word sequence was most likely to come from.  Such a set of models might also be interesting since we could use them to generate examples of comments from either class.
+
+We certainly feel we could have done a lot better if we had gone into it knowing what we know now about the problem.  Our ultimate goal was to get into the 80\% range, but we never managed to do it.  That would have given us greater confidence about our approach and made winning the the class contest a bit sweeter.  Despite this, it is our opinion that we managed to squeeze out an impressive amount of accuracy from a naive bayes classifier, and this has some merit.
 
 
 
