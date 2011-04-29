@@ -15,7 +15,7 @@
 \begin{document}
 
 \title{Amazon Review Sentiment Analysis} 
-\author{Alan Q. Perez-Rathke \and Gary Turovsky}
+\author{Alan J. Perez-Rathke \and Gary I. Turovsky}
 \date{April 28, 2011}   
 \maketitle
 
@@ -52,7 +52,7 @@ The first and most obvious thing to try was to work out which single words in th
 
 There were a few words with the same root among the features, so we started to stem the words before adding them to the feature vector.  In addition, we removed all punctuation.  This gave us a surprisingly high baseline of approximately 70\%.
 
-It seemed that we should care more about comments which had phrases like "great review" in the text.  This gave us the idea of paying attention to nouns and adjectives only.  We filtered our feature vector to include only the single words which were nouns and adjectives.  Now "great" and "review" (along with words like "thanks" and "informative") came up near the top of the most helpful features for classification.  We wanted to make sure to capture any occurence of the two words together now so we started mergin the most common single words into phrases whenever they occured next to each other.  That is, if the adjectvie "great" occured in a sentence and then the next noun word in the sentence was "review", we counted that as the feature "great review".  This allowed us to also count the sentences "great review" and "review was great" as the same (as word order didn't matter in our analysis either).  We also made the fact that a review started with a word to be a feature in itself.
+It seemed that we should care more about comments which had phrases like "great review" in the text.  This gave us the idea of paying attention to nouns and adjectives only.  We filtered our feature vector to include only the single words which were nouns and adjectives.  Now "great" and "review" (along with words like "thanks" and "informative") came up near the top of the most helpful features for classification.  We wanted to make sure to capture any occurence of the two words together now so we started merging the most common single words into phrases whenever they occured next to each other.  That is, if the adjectvie "great" occured in a sentence and then the next noun word in the sentence was "review", we counted that as the feature "great review".  This allowed us to also count the sentences "great review" and "review was great" as the same (as word order didn't matter in our analysis either).  We also made the fact that a review started with a word to be a feature in itself.
 
 \begin{figure}
 	\begin{center}
@@ -86,13 +86,13 @@ It seemed that we should care more about comments which had phrases like "great 
 \end{figure}
 
 
-The improved our accuracy but we were still getting garbage phrases in our feature vector, such as "ipod nano", which clearly would only help discriminate for particular reviews.  We needed to focus on the most important phrases and words.  For this, we decided to use a tf-idf score for each word and phrase.  Strangely, this introduced a lot of garbage words and phrases into our feature vector and eliminated others that we thought would be good discriminators.  We decided to compare this to a straight threshhold.  That is, we would only consider words and phrases that occured in response to several different reviews.  Experimentally, we settled on a threshhold of about 30\% of the reviews.  And this worked a lot better to eliminate extraneous features than the tf-idf score.
+This improved our accuracy but we were still getting garbage phrases in our feature vector, such as "ipod nano", which clearly would only help discriminate for particular reviews.  We needed to focus on the most important phrases and words.  For this, we decided to use a tf-idf score for each word and phrase.  Strangely, this introduced a lot of garbage words and phrases into our feature vector and eliminated others that we thought would be good discriminators.  We decided to compare this to a straight threshhold.  That is, we would only consider words and phrases that occured in response to several different reviews.  Experimentally, we settled on a threshhold of about 30\% of the reviews.  This worked a lot better to eliminate extraneous features than the tf-idf score.
 
 At this point, incorporating the hepfulness of a review, the length of a review, and the frequency of a commenter in a comment thread were added to the feature vector but had very little effect on the accuracy.  We also tried to see whether a review's star rating for a product was different from that product's average star rating.  Perhaps the comments in such a review are more likely to feel one way or another about the review, but it had little effect on the accuracy. One feature which worked was whether the author of a comment was the author of the review (since authors will rarely express any feeling about how good or bad their review was).
 
-Here we ran into the dilemma of where to go from here.  In our testing, we were hovering around 75\% accuracy on average.  To do any better, it would seem we would need a new approach.  But switching to another technique seemed risky.  Was there some other way of improving the naive bayes classifier?
+Here we ran into the dilemma of where to go next.  In our testing, we were hovering around 75\% accuracy on average.  To do any better, it would seem we would need a new approach.  But switching to another technique seemed risky.  Was there some other way of improving the naive bayes classifier?
 
-Since there is an intrinsic assumption of conditional independence in the naive bayes approach, we knew we were missing some features which, together, could be important.  In order to find these, we decided to use the CAR algorithm.  For each class class, we extracted the features that co-occured together and used the fact that these co-occur as a feature in itself to add to the feature vector.  For example, it turned out to be informative when there was only a single comment from a certain user and they started this comment with the word "great".  This was far more significant than the two features separately.
+Since there is an intrinsic assumption of conditional independence in the naive bayes approach, we knew we were missing some features which, together, could be important.  In order to find these, we decided to use the CAR algorithm.  For each class, we extracted the features that co-occured together and used the fact that these co-occur as a feature in itself to add to the feature vector.  For example, it turned out to be informative when there was only a single comment from a certain user and they started this comment with the word "great".  This was far more significant than the two features separately.
 
 We made one more attempt to improve the feature vector.  We attempted to create two clusters out of the feature vectors.  Once we found the mean of both clusters, we added a feature to each feature vector with the standard deviation from the mean.  This, unfortunately, did not help our accuracy, so we removed these features from our feature vector when doing the final classification.
 
@@ -100,7 +100,7 @@ One final note here about using an SVM for classification.  We used the libsvm p
 
 \section{Experiments}
 
-In the interest of determining which features were most valuable, we ran several experiments to see how each contributed to the final accuracy of the classifier.  First, we ran the classifier using only a base feature set: whether or not a word exists within a comment.  We then ran the classifier using the base feature set combined with only a single other set.  The results of these experiments are shown in \ref{fig:MinimalFeatureSets}.  From this, we can see that many of the additional features, such as helpfulness ratio, appear to actually be detrimental to the final accuracy.  Furthermore, we can immediately see that 2-word phrases (also referred to as 2-gram phrases) and CAR mining significantly increase accuracy.
+In the interest of determining which features were most valuable, we ran several experiments to see how each contributed to the final accuracy of the classifier.  First, we ran the classifier using only a base feature set: whether or not a word exists within a comment.  We then ran the classifier using the base feature set combined with only a single other set.  The results of these experiments are shown in Figure \ref{fig:MinimalFeatureSets}.  From this, we can see that many of the additional features, such as helpfulness ratio, appear to actually be detrimental to the final accuracy.  Furthermore, we can immediately see that 2-word phrases (also referred to as 2-gram phrases) and CAR mining significantly increase accuracy.
 \begin{figure}[H]
 \centering
 \includegraphics[width=3.77in]{AccuracyVsFeatureSets.jpg}
@@ -108,7 +108,7 @@ In the interest of determining which features were most valuable, we ran several
 \label{fig:MinimalFeatureSets}
 \end{figure}
 
-Next, we ran a series of experiments that combined multiple feature sets.  The results can be seen in \ref{fig:MultiFeatureSets}.  From this, we can see that, without using CAR mining, the maximum  accuracy remains at just over 71\%.  However, with the addition of CAR features, the accuracy jumps to just over 76 \%.  Furthermore, the boost from CAR mining is dependent on the existence of the "2-gram phrases" and ''Author frequency in review" feature sets (which contain whether or not the commentor has posted before and if the author of a review is commenting).  From this, we can see that our highest quality is achieved by solely using these feature sets - inclusion of additional feature sets only reduces quality.
+Next, we ran a series of experiments that combined multiple feature sets.  The results can be seen in Figure \ref{fig:MultiFeatureSets}.  From this, we can see that, without using CAR mining, the maximum  accuracy remains at just over 71\%.  However, with the addition of CAR features, the accuracy jumps to just over 76.5\%.  Furthermore, the boost from CAR mining is dependent on the existence of the "2-gram phrases" and ''Author frequency in review" feature sets (which contain whether or not the commentor has posted before and if the author of a review is commenting).  From this, we can see that our highest quality is achieved by solely using these feature sets - inclusion of additional feature sets only reduces quality.
 
 \begin{figure}[H]
 \centering
@@ -117,7 +117,7 @@ Next, we ran a series of experiments that combined multiple feature sets.  The r
 \label{fig:MultiFeatureSets}
 \end{figure}
 
-The ''2-gram phrases" features set, which consists of adjective and noun pairs that appear consecutively within a comment, has proven to be one of the most valuable sets in terms of accuracy.  From \ref{fig:WordCountSupport}, we can see how accuracy is influenced by the minimum support (i.e. how often a word appears in different reviews) for words allowed in the pairings.  When the minimum support is below 30\%, too many misleading phrases are generated and the accuracy suffers.  In contrast, when the minimum support is above 30\%, too few phrases are generated and again the accuracy pays a penalty.  From this data, we can conclude that 30\% is a near optimal setting for support threshhold. 
+The ''2-gram phrases" features set, which consists of adjective and noun pairs that appear consecutively within a comment, has proven to be one of the most valuable sets in terms of accuracy.  From Figure \ref{fig:WordCountSupport}, we can see how accuracy is influenced by the minimum support (i.e. how often a word appears in different reviews) for words allowed in the pairings.  When the minimum support is below 30\%, too many misleading phrases are generated and the accuracy suffers.  In contrast, when the minimum support is above 30\%, too few phrases are generated and again the accuracy pays a penalty.  From this data, we can conclude that 30\% is a near optimal setting for support threshhold. 
 
 \begin{figure}[H]
 \centering
@@ -127,7 +127,7 @@ The ''2-gram phrases" features set, which consists of adjective and noun pairs t
 \end{figure}
 
 
-Other parameters of interest include CAR minimum support and minimum confidence threshholds.  From \ref{fig:CARMinSup}, we can see that accuracy peaks when the minimum support threshhold is at 10\%.  We can surmise that lower values generate too many CAR associations and high values generate too few associations; therefore, both of these cases result in a decline in accuracy.  A similar analysis can be done for CAR minimum confidence as shown in \ref{fig:CARMinConf}.  We can see that when minimum confidence is below 58\% or above 61\%, accuracy declines from either too many or too few associations respectively. 
+Other parameters of interest include CAR minimum support and minimum confidence threshholds.  From Figure \ref{fig:CARMinSup}, we can see that accuracy peaks when the minimum support threshhold is at 10\%.  We can surmise that lower values generate too many CAR associations and high values generate too few associations; therefore, both of these cases result in a decline in accuracy.  A similar analysis can be done for CAR minimum confidence as shown in Figure \ref{fig:CARMinConf}.  We can see that when minimum confidence is below 58\% or above 61\%, accuracy declines from either too many or too few associations respectively. 
 
 
 \begin{figure}[h]
